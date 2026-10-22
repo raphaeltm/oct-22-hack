@@ -56,9 +56,9 @@ const MATCHES = [
     why: 'Pure website refonte matches core offer; €210k fits fixed-price delivery, but Mairie may favor larger incumbent agencies.',
   },
   {
-    pub: '657204-2026', buyer: "Commissariat à l'énergie atomique", fit: 65, bid: false, deadline: '23 Oct 2026',
-    title: 'Tierce Maintenance Multi-Applicatives (TMMA) et DevOps',
-    why: 'Large infra/ops scope misaligned with a design-focused team; incumbent CS GROUP entrenched.',
+    pub: '702985-2026', buyer: 'Économat des Armées', fit: 68.5, bid: false, deadline: '23 Oct 2026',
+    title: "Site web, plateforme évènementielle et application mobile du Forum de Paris pour la Défense et la Stratégie",
+    why: 'Mobile app and event platform scope exceeds small senior team capacity, though CPV matches.',
   },
 ];
 
@@ -79,19 +79,31 @@ const RIVALS = [
 const PROFILE_CPV = ['72000000', '72200000', '72413000', '72224000', '79411000', '72212000'];
 const PROFILE_KW = ['RGAA', 'DSFR', 'SecNumCloud', 'accessibilité', 'refonte', 'souverain', 'open data', 'tableau de bord', 'logiciel libre'];
 
-// Autopilot (issue #19) is still being built: keep it labelled "coming soon"
-// and show no hit rates or time savings until a real demo run produces them.
-const LOOP = ['Tender published', 'Matched to you', 'Dossier assembled', 'You decide', 'Award notice lands', 'Prediction graded'];
+// Autopilot (#19, live since #22/#23). The backtest and the example below come
+// from GET /api/autopilot/scorecard on dev, 22 Oct 2026. Keep the backtest label,
+// and don't call it a win probability.
+const LOOP = ['Tender published', 'Matched to you', 'Dossier assembled', 'You decide (it learns)', 'Award notice lands', 'Prediction graded'];
 const DOSSIER = [
+  'Go / Consider / No-go verdict, with reasons',
+  'Short memo written by Claude',
+  'Calendar (question deadline estimated)',
   'Award criteria and weights',
-  'Question and submission deadlines',
-  'Framework and duration',
-  "Buyer's award history",
-  'Possible incumbent',
-  'Likely competitor field',
+  'Duration, renewals, framework',
+  'Notice requirements checked against your profile',
+  'Buyer history and bids received',
+  "The buyer's last similar award",
+  'Likely bidders and value range',
   'DC1 · DC2 · DUME · ATTRI1 · URSSAF',
-  'Draft questions for the buyer',
+  'Draft buyer questions in French (never sent)',
 ];
+const HIT = {
+  pub: '233673-2026',
+  award: '566577-2026',
+  title: "Tierce maintenance applicative de l'application Oper@ de paie des contractuels des EPLE",
+  buyer: "Ministère de l'Éducation nationale",
+  predicted: ['INETUM', 'CGI France', 'SOPRA STERIA GROUP', 'Nexpublica France', 'BERGER LEVRAULT'],
+  winner: 'CGI France',
+};
 
 const PIPELINE = [
   { k: 'TED Search API', d: 'French notices and award results, CPV 72*, since 2025' },
@@ -418,19 +430,20 @@ export function Landing() {
           </div>
         </section>
 
-        {/* ---------------- autopilot (coming soon) ---------------- */}
+        {/* ---------------- autopilot ---------------- */}
         <section className="lp-section lp-auto" id="autopilot">
           <div className="lp-wrap">
             <div className="lp-auto-head" data-reveal>
-              <p className="lp-kicker">Next: Autopilot</p>
-              <span className="lp-soon"><span className="lp-live" /> Coming soon · in development</span>
+              <p className="lp-kicker">Autopilot</p>
+              <span className="lp-soon"><span className="lp-live" /> New · live in the app</span>
             </div>
             <h2 className="lp-h2" data-reveal>
-              Your bid desk works while you sleep, <em>and gets sharper with every award notice.</em>
+              It does the homework while you sleep, <em>and keeps score.</em>
             </h2>
             <p className="lp-auto-lede" data-reveal>
-              Alert tools stop at the alert. AI drafting tools wait for you to upload documents. Radar will start the
-              homework the moment a tender matches, then check its own predictions against the award notice.
+              Alert tools stop at the alert. AI drafting tools wait for you to upload documents. Radar starts the
+              homework the moment a strong tender matches, then grades its own predictions when the award notice
+              lands.
             </p>
 
             <ol className="lp-loop" data-reveal aria-label="Autopilot loop">
@@ -443,12 +456,12 @@ export function Landing() {
             </ol>
 
             <div className="lp-auto-grid">
-              <article className="lp-auto-card lp-auto-wide" data-reveal>
+              <article className="lp-auto-card" data-reveal>
                 <span className="lp-mono lp-auto-n">01</span>
                 <h3>A pre-bid dossier, before you ask</h3>
                 <p>
-                  When a new French IT tender fits your company, the agent assembles the dossier on its own. Every line
-                  links back to its TED source.
+                  When a strong new match has at least a week left, the agent assembles the dossier on its own,
+                  sourced from the TED notice and award history.
                 </p>
                 <ul className="lp-dossier">
                   {DOSSIER.map((d) => (
@@ -456,28 +469,71 @@ export function Landing() {
                   ))}
                 </ul>
               </article>
+
               <article className="lp-auto-card" data-reveal style={{ '--i': 1 } as CSSProperties}>
                 <span className="lp-mono lp-auto-n">02</span>
                 <h3>It grades itself</h3>
                 <p>
-                  It writes down who it expects to compete and who might hold the contract today. When the award
-                  notice arrives, it scores those predictions automatically and keeps a running scorecard.
+                  It logs the bidders it expects. When the award notice for the same procedure arrives, it checks
+                  them against the real winners. We ran the same test on past tenders:
                 </p>
-                <div className="lp-grade" aria-hidden>
-                  <span>Predicted</span><i /><span>Awarded</span><i /><b>Scored</b>
+                <p className="lp-bt-big">
+                  <b>1.9×</b>
+                  <span>more often than a “most frequent winners” baseline</span>
+                </p>
+                <div className="lp-bt">
+                  <div className="lp-bt-row" style={{ '--w': 17 / 149 } as CSSProperties}>
+                    <span>Radar's top 5</span><i /><b className="lp-mono">17 / 149</b>
+                  </div>
+                  <div className="lp-bt-row base" style={{ '--w': 9 / 150 } as CSSProperties}>
+                    <span>Most frequent winners</span><i /><b className="lp-mono">9 / 150</b>
+                  </div>
                 </div>
+                <p className="lp-bt-note">
+                  Tenders where an actual winner was among five predicted bidders. Backtest on 150 past French IT
+                  tenders, 22 Oct 2026. Not a win probability.
+                </p>
               </article>
+
               <article className="lp-auto-card" data-reveal style={{ '--i': 2 } as CSSProperties}>
                 <span className="lp-mono lp-auto-n">03</span>
+                <h3>A real call, checked</h3>
+                <a className="lp-hit-head" href={ted(HIT.pub)} target="_blank" rel="noreferrer">
+                  <span className="lp-mono">TED {HIT.pub}</span>
+                  <b lang="fr">{HIT.title}</b>
+                  <span>{HIT.buyer}</span>
+                </a>
+                <ol className="lp-hit">
+                  {HIT.predicted.map((n) => (
+                    <li key={n} className={n === HIT.winner ? 'hit' : ''}>
+                      <span>{n}</span>
+                      {n === HIT.winner && <b className="lp-mono">won</b>}
+                    </li>
+                  ))}
+                </ol>
+                <a className="lp-hit-award lp-mono" href={ted(HIT.award)} target="_blank" rel="noreferrer">
+                  Award notice {HIT.award} <Arrow />
+                </a>
+              </article>
+
+              <article className="lp-auto-card" data-reveal style={{ '--i': 3 } as CSSProperties}>
+                <span className="lp-mono lp-auto-n">04</span>
                 <h3>It learns from you</h3>
                 <p>
-                  Mark a tender bid, skip, won or lost and give a reason. Radar reweights your fit score, and your
-                  corrections become standing facts about your company.
+                  Mark a tender bid, skip, won or lost. Skip it with a reason and similar tenders rank lower, and
+                  Radar shows you the rule it learned.
                 </p>
                 <div className="lp-feedback" aria-hidden>
                   {['Bid', 'Skip', 'Won', 'Lost'].map((f) => <span key={f}>{f}</span>)}
                 </div>
+                <p className="lp-rule lp-mono">−20: you skipped … because of the buyer</p>
               </article>
+            </div>
+
+            <div className="lp-auto-cta" data-reveal>
+              <Link to={session ? '/autopilot' : '/login?demo=1&next=%2Fautopilot'} className="lp-btn lp-btn-primary">
+                See the demo dossiers <Arrow />
+              </Link>
             </div>
           </div>
         </section>
