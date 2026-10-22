@@ -153,7 +153,7 @@ export function Landing() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Radar: win the tenders too big to bid alone';
+    document.title = 'Radar: faster search for your next contractor client or bidding partner';
     return () => {
       document.title = prev;
     };
@@ -205,9 +205,9 @@ export function Landing() {
               <span className="lp-live" /> Live on TED · France · IT services
             </p>
             <h1 className="lp-rise" style={{ '--d': '80ms' } as CSSProperties}>
-              Win the tenders
+              Faster search for your next
               <br />
-              <em>too big to bid alone.</em>
+              <em>contractor client or bidding partner.</em>
             </h1>
             <p className="lp-lede lp-rise" style={{ '--d': '160ms' } as CSSProperties}>
               French buyers let small firms bid together as a groupement. Radar reads every French public IT tender,
