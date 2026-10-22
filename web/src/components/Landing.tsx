@@ -117,7 +117,6 @@ const PIPELINE = [
 export function Landing() {
   const { data: session } = useSession();
   const root = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLElement>(null);
 
   // Reveal-on-scroll for anything marked data-reveal.
   useEffect(() => {
@@ -138,34 +137,6 @@ export function Landing() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (window.innerWidth <= 900) return;
-      e.preventDefault();
-      el.scrollLeft += e.deltaY + e.deltaX;
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
-
-  useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    const handler = (e: MouseEvent) => {
-      const link = (e.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
-      if (!link || window.innerWidth <= 900) return;
-      const id = link.getAttribute('href')!.slice(1);
-      const target = document.getElementById(id);
-      if (!target) return;
-      e.preventDefault();
-      target.scrollIntoView({ behavior: 'smooth', inline: 'start' });
-    };
-    el.addEventListener('click', handler as EventListener);
-    return () => el.removeEventListener('click', handler as EventListener);
   }, []);
 
   useEffect(() => {
@@ -213,7 +184,7 @@ export function Landing() {
         </div>
       </header>
 
-      <main id="main" ref={scrollRef}>
+      <main id="main">
         {/* ---------------- hero ---------------- */}
         <section className="lp-hero">
           <div className="lp-hero-grid" aria-hidden />
@@ -685,7 +656,7 @@ function Film() {
   const video = useRef<HTMLVideoElement>(null);
   const [state, setState] = useState<'idle' | 'playing' | 'error'>('idle');
 
-  // Pause when the visitor scrolls to another panel.
+  // Pause when the visitor scrolls the film out of view.
   useEffect(() => {
     const v = video.current;
     if (!v || !('IntersectionObserver' in window)) return;
