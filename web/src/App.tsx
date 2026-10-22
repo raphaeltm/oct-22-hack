@@ -9,6 +9,7 @@ import { CompetitorDetailPage } from './components/CompetitorDetailPage';
 import { CompanyPage } from './components/CompanyPage';
 import { Landing } from './components/Landing';
 import { LoginPage, RequireAuth } from './Login';
+import { ConsentPage } from './Consent';
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
         {/* Public */}
         <Route index element={<Landing />} />
         <Route path="login" element={<LoginPage />} />
+        <Route path="oauth/consent" element={<ConsentPage />} />
 
         {/* Signed-in workspace */}
         <Route

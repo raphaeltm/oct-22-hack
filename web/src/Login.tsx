@@ -107,6 +107,9 @@ export function Login({ demo = false }: { demo?: boolean }) {
 export function LoginPage() {
   const { data, isPending } = useSession();
   const [params] = useSearchParams();
+  // An OAuth authorization (MCP client sign-in): the server redirects onwards
+  // after sign-in, so always show the form instead of entering the workspace.
+  if (params.has('sig')) return <Login />;
   if (isPending) return <p className="empty">Loading…</p>;
   if (data) return <Navigate to={safeNext(params.get('next'))} replace />;
   return <Login demo={params.get('demo') === '1'} />;

@@ -84,6 +84,21 @@ Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL
 Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
 handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
 
+## MCP server (Claude, ChatGPT)
+
+`POST /mcp` is a remote MCP server (Streamable HTTP, stateless; `server/src/mcp.ts`). Add `<BETTER_AUTH_URL>/mcp`
+as a custom connector in Claude or ChatGPT (developer mode). It exposes every agent tool (`searchTenders`, `matchTenders`,
+`findCompetitors`, `updateCompanyProfile`, ...) plus `askCopilot`, which runs the full copilot agent on a thread that also
+shows up in the web app. Access is full (read and write) for the signed-in user.
+
+Auth is OAuth 2.1 from BetterAuth's `@better-auth/oauth-provider` plugin: clients discover it via
+`/.well-known/oauth-protected-resource/mcp` → `/.well-known/oauth-authorization-server/api/auth`, register themselves
+(dynamic client registration at `/api/auth/oauth2/register`), and send the user through `/login` and `/oauth/consent`
+with PKCE (S256). `/mcp` accepts only JWT access tokens issued for the `<BETTER_AUTH_URL>/mcp` resource (verified against
+the local JWKS); tools run as the token's `sub`. `BETTER_AUTH_URL` must be the public URL, because it is the issuer and the
+resource identifier. Extra tables (`jwks`, `oauthClient`, `oauthAccessToken`, `oauthConsent`, ...) are created by the
+BetterAuth migrator on startup.
+
 ## Demo data
 
 `npm run seed:demo` runs migrations, creates the demo user and seeds the fictional **Rivage Numérique** company profile (idempotent, so it's safe to rerun).

@@ -9,6 +9,7 @@ import { publish, redis, subscribe } from './events';
 import { jobsRoutes } from './jobs/routes';
 import { startWorkers } from './jobs/worker';
 import { mastra, memory } from './mastra';
+import { mcpRoutes } from './mcp';
 import { userRequestContext } from './mastra/context';
 import { data } from './routes/data';
 import { matchesRoutes } from './routes/matches';
@@ -139,6 +140,9 @@ app.get('/api/threads/:threadId/events', async (c) => {
 
 // Background jobs: POST /api/jobs/ted-import, POST /api/competitors/:id/research, GET /api/jobs/events
 app.route('/api', jobsRoutes);
+
+// MCP server + OAuth discovery (/mcp, /.well-known/*); Bearer-token auth, not sessions.
+app.route('/', mcpRoutes);
 
 // Serve the built frontend in production.
 app.use('/*', serveStatic({ root: './public' }));
