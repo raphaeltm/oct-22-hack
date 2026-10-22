@@ -139,6 +139,16 @@ async function search(body: object): Promise<{
 
 const LANG_ORDER = ['fra', 'eng'];
 
+/** TED text is sometimes HTML-escaped once or twice ("&amp;amp;"). */
+function unescape(s: string) {
+  let prev = '';
+  while (prev !== s && s.includes('&')) {
+    prev = s;
+    s = s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  }
+  return s;
+}
+
 /** Values of a multilingual field, preferring fra, then eng, then any. */
 function ml(field: unknown): string[] {
   if (!field || typeof field !== 'object') return [];
@@ -257,9 +267,12 @@ function winnersOf(n: Notice): WinnerRow[] {
 async function upsertNotice(n: Notice): Promise<number> {
   const publicationNumber = String(n['publication-number']);
   const noticeType = String(n['notice-type']);
-  const title =
-    ml(n['title-proc'])[0] || stripTitlePrefix(ml(n['notice-title'])[0] ?? '') || ml(n['title-lot'])[0] || '';
-  const description = ml(n['description-proc'])[0] ?? (ml(n['description-lot']).join('\n\n') || null);
+  // Titles/descriptions only: names stay as-is so organisation keys don't change.
+  const title = unescape(
+    ml(n['title-proc'])[0] || stripTitlePrefix(ml(n['notice-title'])[0] ?? '') || ml(n['title-lot'])[0] || '',
+  );
+  const rawDescription = ml(n['description-proc'])[0] ?? (ml(n['description-lot']).join('\n\n') || null);
+  const description = rawDescription && unescape(rawDescription);
   const cpvCodes = [...new Set(list(n['classification-cpv']))];
   const publicationDate = tedDate(list(n['publication-date'])[0]);
   const estimatedValue = num(n['estimated-value-proc']) ?? num(n['total-value']);
