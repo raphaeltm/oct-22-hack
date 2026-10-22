@@ -14,7 +14,7 @@ const EDGE = [
     k: 'Data nobody uses',
     d: (
       <>
-        French award notices record who bid <i>together</i>: <b>155 of 2,610</b> since 2025 name a multi-company{' '}
+        French award notices record who bid <i>together</i>: <b>199 of 2,610</b> since 2025 flag a multi-company{' '}
         <i>groupement</i>. Other tools flatten them into “winners”. We parse them.
       </>
     ),
@@ -118,7 +118,7 @@ export function HackathonPitch() {
               TED 667222-2026
             </a>
             ). For our demo firm, the agent quotes two gaps from the French notice (application maintenance, GIS) and ranks{' '}
-            <b>AKKODIS I&amp;S</b> first: covers both, 2 joint bids on TED, based near Lyon. Screenshot from dev, 22 Oct 13:05 UTC;
+            <b>AKKODIS I&amp;S</b> first: covers both, has joint-bid history on TED, based near Lyon. Screenshot from dev, 22 Oct 13:05 UTC;
             demo company fictional, scores are heuristics.
           </p>
         </section>
