@@ -79,9 +79,19 @@ export $(cat .env | xargs) && npm run dev
 Web runs on http://localhost:5173 and proxies `/api` to the server on :3000.
 Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
 
+### Auth
+
+Email/password login via **BetterAuth** (`server/src/auth.ts`), mounted at `/api/auth/*`. Its tables
+(`user`, `session`, `account`, `verification`) live in the same Postgres and are migrated on server start.
+Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL` (public base URL, default `http://localhost:3000`).
+Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
+handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
+
 ### API
 
-- `GET  /api/health`
+- `GET  /api/health` (public)
+- `POST /api/auth/sign-up/email` `{ name, email, password }`, `POST /api/auth/sign-in/email`, `POST /api/auth/sign-out`
+- `GET  /api/me` → `{ user, company }` (company from `companies.user_id`, or `null`)
 - `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`; output arrives on the event stream
 - `GET  /api/threads/:threadId/messages` — persisted history (Postgres via Mastra memory)
 - `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
@@ -91,7 +101,7 @@ Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
 ### Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` (secrets), `MODEL`, `BETTER_AUTH_URL` (variables).
 
 ## App skeleton
 
@@ -114,9 +124,19 @@ export $(cat .env | xargs) && npm run dev
 Web runs on http://localhost:5173 and proxies `/api` to the server on :3000.
 Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
 
+### Auth
+
+Email/password login via **BetterAuth** (`server/src/auth.ts`), mounted at `/api/auth/*`. Its tables
+(`user`, `session`, `account`, `verification`) live in the same Postgres and are migrated on server start.
+Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL` (public base URL, default `http://localhost:3000`).
+Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
+handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
+
 ### API
 
-- `GET  /api/health`
+- `GET  /api/health` (public)
+- `POST /api/auth/sign-up/email` `{ name, email, password }`, `POST /api/auth/sign-in/email`, `POST /api/auth/sign-out`
+- `GET  /api/me` → `{ user, company }` (company from `companies.user_id`, or `null`)
 - `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`; output arrives on the event stream
 - `GET  /api/threads/:threadId/messages` — persisted history (Postgres via Mastra memory)
 - `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
@@ -126,4 +146,4 @@ Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
 ### Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` (secrets), `MODEL`, `BETTER_AUTH_URL` (variables).

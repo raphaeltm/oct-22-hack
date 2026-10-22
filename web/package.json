@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "better-auth": "^1.7.12",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
