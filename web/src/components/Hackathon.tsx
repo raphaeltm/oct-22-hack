@@ -213,7 +213,7 @@ function buildSlides(): SlideDef[] {
       dark: true,
       tags: ['C5'],
       notes:
-        'Open with the one-liner: "a platform that helps small French IT firms find the partners to bid together". Be clear that the radar underneath is live and the partner finder is what we are building now.',
+        'Open with the one-liner: "a platform that helps small French IT firms find the partners to bid together". The radar and the partner finder are both live on dev; scores are heuristics.',
       body: (
         <div className="hk-title">
           <p className="hk-kicker">Future Founders · Data-Centric Agents · 22 Oct 2026</p>
@@ -411,9 +411,9 @@ function buildSlides(): SlideDef[] {
       id: 'edge',
       title: 'The pivot: bid together',
       tags: ['C1', 'C3', 'C5'],
-      labels: ['planned'],
+      labels: ['live', 'snapshot'],
       notes:
-        'A mentor told us we had no edge. Our answer comes from the data: French buyers let SMEs bid together as a groupement, and TED records those groups. The partner finder is being designed now; the count on this slide is real, the feature is not built yet.',
+        'A mentor told us we had no edge. Our answer comes from the data: French buyers let SMEs bid together as a groupement, and TED records those groups. We built the partner finder in the next 25 minutes; it is live on dev (merged 12:53 UTC).',
       body: (
         <div className="hk-split hk-split-wide">
           <div>
@@ -440,7 +440,7 @@ function buildSlides(): SlideDef[] {
             </p>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Partner finder (being built now, not in the demo)</p>
+            <p className="hk-kicker">Partner finder (live on dev since 12:53)</p>
             <ol className="hk-steps">
               <li>
                 <b>Find:</b> for a tender, rank firms that fill your gaps, have bid jointly before, know this buyer and don't
@@ -469,7 +469,7 @@ function buildSlides(): SlideDef[] {
       id: 'foundation',
       title: 'What the platform stands on',
       tags: ['C2', 'C3'],
-      labels: ['live', 'planned'],
+      labels: ['live'],
       notes:
         'The pivot does not throw work away. Every partner-finder step reuses something that already runs on dev. Be precise about which column is live.',
       body: (
@@ -480,8 +480,8 @@ function buildSlides(): SlideDef[] {
           <table className="hk-table hk-table-big">
             <thead>
               <tr>
-                <th>Partner-finder step (planned)</th>
-                <th>Already running on dev</th>
+                <th>Partner-finder step</th>
+                <th>Built on</th>
               </tr>
             </thead>
             <tbody>
@@ -497,7 +497,7 @@ function buildSlides(): SlideDef[] {
           </table>
           <p className="hk-callout">
             Live today: a pre-bid dossier for a tender worth more than €1M already tells a small firm to consider a groupement
-            or subcontracting. What's missing is <i>who</i> to call. That's the partner finder.
+            or subcontracting, and the partner finder now answers <i>who</i> to call, with TED evidence for each name.
           </p>
         </div>
       ),
@@ -636,7 +636,7 @@ function buildSlides(): SlideDef[] {
             </div>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Copilot: Mastra + Claude, 12 tools</p>
+            <p className="hk-kicker">Copilot: Mastra + Claude, 15 tools</p>
             <ul className="hk-tools">
               {TOOLS.map((t) => (
                 <li key={t[0]}>
@@ -645,7 +645,7 @@ function buildSlides(): SlideDef[] {
               ))}
             </ul>
             <p className="hk-foot">
-              Plus three helper agents (match rationales, dossier memo, competitor research). All 12 tools are also exposed
+              Plus three helper agents (match rationales, dossier memo, competitor research). All the tools are also exposed
               over an <b>MCP server with OAuth 2.1</b>, so you can use Radar from Claude or ChatGPT.
             </p>
           </div>
@@ -913,7 +913,7 @@ function buildSlides(): SlideDef[] {
               Sign in with <code>demo@rivage-numerique.fr</code> / <code>rivage-demo-2026</code> (a fictional company; the data is real).
             </li>
             <li>
-              Ask: <i>“What should we bid on this month?”</i>, <i>“Which open tenders are too big for us alone?”</i>, or open Autopilot and press
+              Ask: <i>“What should we bid on this month?”</i>, <i>“Which open tenders are too big for us alone?”</i>, open any tender's <b>Partner finder</b>, or open Autopilot and press
               <b> Skip…</b> to watch it learn.
             </li>
           </ol>
@@ -950,7 +950,7 @@ const FOUNDATION: [string, string][] = [
   ['Spot the tender you can\'t do alone', 'Matching on CPV, text, buyer and region; Autopilot dossiers flag scope and size gaps.'],
   ['Find partners who fill the gap', 'Award index of 2,610 notices with winners merged across name variants; ranking by buyer, CPV, text and recency.'],
   ['Check they are real and relevant', 'Keenable web research on any company, saved with sources.'],
-  ['Draft the approach in French', 'Claude agent with 12 tools already writes French buyer questions and memos from sourced facts.'],
+  ['Draft the approach in French', 'The Claude agent writes French buyer questions and memos from sourced facts.'],
   ['Learn who answers and who wins', 'Feedback rules and a prediction scorecard graded against real TED awards.'],
   ['Bring partners onto the platform', 'Sign-up, one company profile per user built by chat, MCP access from Claude or ChatGPT.'],
 ];
@@ -970,7 +970,7 @@ const FLOW = [
   { k: 'BullMQ on Redis', d: 'Idempotent import every 6 h; research and Autopilot jobs with retries.' },
   { k: 'Postgres', d: 'Tenders, awards, merged organisations, French full-text search, predictions, memory.' },
   { k: 'Matching + rivals', d: 'CPV depth, text, buyer and region signals; award-history ranking with recency.' },
-  { k: 'Mastra + Claude', d: '12 tools, user-scoped; Keenable web search for competitor research.' },
+  { k: 'Mastra + Claude', d: '15 tools, user-scoped; Keenable web search for competitor research.' },
   { k: 'Redis Streams → SSE', d: 'Answers and job progress stream live to the UI; reconnect-safe.' },
 ];
 
@@ -993,6 +993,7 @@ const TOOLS: [string, string][] = [
   ['researchCompetitors / getResearchNotes', 'Keenable web research'],
   ['getPrebidDossier / getAutopilotInbox', 'Autopilot output'],
   ['recordTenderDecision', 'feedback that re-ranks'],
+  ['findPartners / draftPartnerInvite / listPartnerInvites', 'joint-bid partners, outreach, replies'],
 ];
 
 const HITS = [
@@ -1008,7 +1009,8 @@ const STATUS = {
     'Login, one company per user, profile built by chat',
     'Tender matching with reasons; French full-text search',
     'Competitors from real awards, merged across name variants',
-    'Copilot chat with 12 tools, streamed over SSE',
+    'Copilot chat with 15 tools, streamed over SSE',
+    'Partner finder: joint bids parsed from TED XML, gap detection, ranked partners with evidence, French invite drafts, public reply page, scored replies',
     'Autopilot dossiers, live predictions, grading, learned rules',
     'Backtest vs baseline scorecard in the product',
     'Deployed with Docker Compose on dev (SAM)',
@@ -1019,6 +1021,7 @@ const STATUS = {
     'Imports re-read everything since 2025 (not incremental)',
     'Backtest and job events are global, not per company',
     'Without a model key, chat falls back to a stub',
+    'Joint-bid evidence is sparse (a few % of award notices) and most winners publish no contact email, so the user adds it',
     'MCP server: OAuth discovery and client registration answer on dev; a full Claude session timed out in an earlier test and has not been re-verified',
   ],
   no: [
@@ -1026,15 +1029,14 @@ const STATUS = {
     'BOAMP and DECP sources',
     'Automated test suite (we typecheck, build and browser-test)',
     'Citation checking and per-user rate limits (#30)',
-    'Partner finder, the core of the pivot: designed, being built, not in the demo',
   ],
 };
 
 const ROADMAP = [
   {
-    when: 'Building now',
-    h: 'Partner finder',
-    items: ['Import TED joint-bid groups (group → members, lead)', 'Score partners per tender; agent drafts the French outreach, you send it', 'Score replies; invite → claim profile → network effect'],
+    when: 'Next for partners',
+    h: 'Grow the network',
+    items: ['Pilot with real agencies: invites → replies → joint bids won', 'Older joint-bid history from DECP', 'Alert firms when a tender needs exactly their skills'],
   },
   {
     when: 'Next week',
@@ -1177,7 +1179,7 @@ function LiveCheck() {
       {live.state === 'signed-out' && (
         <p>
           Health: {live.health ? 'ok' : 'not ok'}. The data API needs a session.{' '}
-          <Link to={`/login?demo=1&next=${encodeURIComponent('/hackathon#proof')}`}>Sign in as the demo user</Link>, then come
+          <Link to={`/login?demo=1&next=${encodeURIComponent('/hackathon/full#proof')}`}>Sign in as the demo user</Link>, then come
           back and run it again.
         </p>
       )}
