@@ -4,3 +4,4 @@ dist
 *.log
 server/public
 server/scratch/
+*.rdb
