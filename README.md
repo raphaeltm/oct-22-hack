@@ -69,11 +69,21 @@ export $(cat .env | xargs) && npm run dev
 The web app runs on http://localhost:5173 and proxies `/api` to the server on :3000.
 Without `ANTHROPIC_API_KEY`, the chat endpoint returns a stub reply.
 
+## Auth
+
+Email/password login via **BetterAuth** (`server/src/auth.ts`), mounted at `/api/auth/*`. Its tables
+(`user`, `session`, `account`, `verification`) live in the same Postgres and are migrated on server start.
+Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL` (public base URL, default `http://localhost:3000`).
+Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
+handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
+
 ## API
 
 What exists today:
 
-- `GET  /api/health`
+- `GET  /api/health` (public)
+- `POST /api/auth/sign-up/email` `{ name, email, password }`, `POST /api/auth/sign-in/email`, `POST /api/auth/sign-out`
+- `GET /api/me` → `{ user, company }` (company from `companies.user_id`, or `null`)
 - `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`. The output arrives on the event stream.
 - `GET  /api/threads/:threadId/messages` returns the persisted history (Postgres via Mastra memory).
 - `GET  /api/threads/:threadId/events` is an SSE feed of the thread's Redis Stream (`thread:<id>:events`).
@@ -85,6 +95,7 @@ What exists today:
 The product flow above is the target; unchecked items below are still planned.
 
 - [x] Skeleton: Mastra agent + Postgres memory, Hono API, React chat UI
+- [x] BetterAuth email/password login and session-protected API
 - [x] Redis Streams event log with SSE realtime updates
 - [x] Drizzle schema and migrations: tenders, companies, organisations, awards, research notes and tender matches
 - [ ] RFP importer: load a sample dataset from one public source into `tenders`
@@ -105,4 +116,4 @@ The product flow above is the target; unchecked items below are still planned.
 ## Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY` and `POSTGRES_PASSWORD` are secrets, and `MODEL` is a variable. `KEENABLE_API_KEY` will be added once search is wired up.
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` are secrets; `MODEL` and `BETTER_AUTH_URL` are variables. `KEENABLE_API_KEY` will be added once search is wired up.
