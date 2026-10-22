@@ -11,8 +11,8 @@ function safeNext(next: string | null) {
   return next && next.startsWith('/') && !next.startsWith('//') ? next : '/tenders';
 }
 
-export function Login({ demo = false }: { demo?: boolean }) {
-  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+export function Login({ demo = false, signUpFirst = false }: { demo?: boolean; signUpFirst?: boolean }) {
+  const [mode, setMode] = useState<'sign-in' | 'sign-up'>(signUpFirst ? 'sign-up' : 'sign-in');
   const [name, setName] = useState('');
   const [email, setEmail] = useState(demo ? DEMO.email : '');
   const [password, setPassword] = useState(demo ? DEMO.password : '');
@@ -112,7 +112,7 @@ export function LoginPage() {
   if (params.has('sig')) return <Login />;
   if (isPending) return <p className="empty">Loading…</p>;
   if (data) return <Navigate to={safeNext(params.get('next'))} replace />;
-  return <Login demo={params.get('demo') === '1'} />;
+  return <Login demo={params.get('demo') === '1'} signUpFirst={params.get('mode') === 'signup'} />;
 }
 
 /** Redirects to /login (remembering the current path) until there is a session. */

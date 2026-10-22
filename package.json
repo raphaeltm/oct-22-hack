@@ -13,6 +13,7 @@
     "db:up": "docker compose -f docker-compose.dev.yml up -d",
     "seed:demo": "npm run seed:demo -w server",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "check": "npm run typecheck && npm run build"
+    "check": "npm run typecheck && npm run build",
+    "test": "npm test -w server"
   }
 }

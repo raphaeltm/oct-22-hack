@@ -3,6 +3,7 @@
 import { autopilotTools } from './autopilot';
 import { companyTools } from './company';
 import { competitorTools } from './competitors';
+import { partnerTools } from './partners';
 import { researchTools } from './research';
 import { tenderTools } from './tenders';
 
@@ -12,4 +13,5 @@ export const tools = {
   ...tenderTools,
   ...competitorTools,
   ...autopilotTools,
+  ...partnerTools,
 };

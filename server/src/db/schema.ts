@@ -60,6 +60,8 @@ export const tenders = pgTable(
     // eForms procedure identifier (BT-04): shared by a tender and its award notice.
     procedureId: text('procedure_id'),
     raw: jsonb('raw'),
+    // When the notice XML was read for tendering parties (groupements); null = not yet.
+    partiesFetchedAt: timestamp('parties_fetched_at', { withTimezone: true }),
     search: tsvector('search').generatedAlwaysAs(
       sql`setweight(to_tsvector('french', coalesce(title, '')), 'A') || setweight(to_tsvector('french', coalesce(buyer_name, '')), 'B') || setweight(to_tsvector('french', coalesce(description, '')), 'C')`,
     ),
@@ -82,6 +84,13 @@ export const organisations = pgTable('organisations', {
   country: text('country'),
   website: text('website'),
   summary: text('summary'),
+  // From eForms notice XML (Organization block): SIRET, location and the contact
+  // email published in the notice (contactSource = that notice's publication number).
+  siret: text('siret'),
+  city: text('city'),
+  nuts: text('nuts'),
+  contactEmail: text('contact_email'),
+  contactSource: text('contact_source'),
   lastResearchedAt: timestamp('last_researched_at', { withTimezone: true }),
   ...timestamps,
 });
@@ -194,6 +203,88 @@ export const tenderFeedback = pgTable(
   },
   (t) => [primaryKey({ columns: [t.companyId, t.tenderId] })],
 );
+
+// ---------- Partner finder ----------
+
+// Groupements (co-contracting groups) from eForms award notices: one row per
+// tendering party with 2+ members. Evidence that these firms bid together.
+export const consortia = pgTable(
+  'consortia',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenderId: uuid('tender_id').notNull().references(() => tenders.id, { onDelete: 'cascade' }),
+    partyRef: text('party_ref').notNull(), // eForms TPA-xxxx
+    name: text('name'),
+    won: integer('won').notNull().default(1), // 1 = referenced by a settled contract / lot result
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [uniqueIndex('consortia_tender_party_idx').on(t.tenderId, t.partyRef)],
+);
+
+export const consortiumMembers = pgTable(
+  'consortium_members',
+  {
+    consortiumId: uuid('consortium_id').notNull().references(() => consortia.id, { onDelete: 'cascade' }),
+    orgRef: text('org_ref').notNull(), // eForms ORG-xxxx
+    organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    leader: integer('leader').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.consortiumId, t.orgRef] }), index('consortium_members_org_idx').on(t.organisationId)],
+);
+
+// Outreach from a company to a potential partner for one tender. The token is a
+// capability for the public response page (/p/:token): it only reveals this
+// invite's tender summary and accepts one response.
+export const partnerInvites = pgTable(
+  'partner_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    token: text('token').notNull().unique(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    tenderId: uuid('tender_id').notNull().references(() => tenders.id, { onDelete: 'cascade' }),
+    organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'set null' }),
+    partnerName: text('partner_name').notNull(),
+    contactEmail: text('contact_email'),
+    role: text('role').notNull(), // cotraitant | sous-traitant | mandataire
+    need: text('need').notNull(), // what we need from the partner (shown to them)
+    subject: text('subject').notNull(),
+    body: text('body').notNull(),
+    fitScore: real('fit_score'),
+    signals: jsonb('signals').$type<Record<string, unknown>>(),
+    status: text('status').notNull().default('draft'), // draft | sent | opened | responded
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    openedAt: timestamp('opened_at', { withTimezone: true }),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    index('partner_invites_company_idx').on(t.companyId, t.tenderId),
+    index('partner_invites_org_idx').on(t.organisationId),
+  ],
+);
+
+// The partner's answer (untrusted input) and how it scored.
+export const partnerResponses = pgTable('partner_responses', {
+  inviteId: uuid('invite_id').primaryKey().references(() => partnerInvites.id, { onDelete: 'cascade' }),
+  interest: text('interest').notNull(), // yes | maybe | no
+  role: text('role'),
+  companyName: text('company_name'),
+  siret: text('siret'),
+  contactName: text('contact_name'),
+  contactEmail: text('contact_email'),
+  website: text('website'),
+  capabilities: text('capabilities'),
+  availability: text('availability'),
+  references: jsonb('references').$type<{ title: string; buyer?: string; year?: string }[]>().notNull().default([]),
+  message: text('message'),
+  score: real('score'),
+  breakdown: jsonb('breakdown').$type<Record<string, unknown>>(),
+  // Company created when the partner signed up from the response page (network effect).
+  claimedCompanyId: uuid('claimed_company_id').references(() => companies.id, { onDelete: 'set null' }),
+  createdAt: timestamps.createdAt,
+});
 
 export type Company = typeof companies.$inferSelect;
 export type Tender = typeof tenders.$inferSelect;

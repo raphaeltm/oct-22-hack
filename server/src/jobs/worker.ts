@@ -41,12 +41,23 @@ async function processTedImport(job: Job<TedImportJobData>) {
       void reportProgress(job, { current: n, total: job.data.limit ?? 0, message: `Imported ${n} notices` });
     },
   });
+  // Joint bids (groupements): read the XML of new award notices that report one.
+  const { enrichParties } = await import('../importers/ted-parties');
+  const parties = await enrichParties({
+    limit: 300,
+    onProgress: (done, total) => {
+      if (done % 25 === 0 || done === total) void reportProgress(job, { current: done, total, message: `Reading joint bids ${done}/${total}` });
+    },
+  }).catch((err) => {
+    console.error('[ted-import] joint-bid enrichment failed', err);
+    return null;
+  });
   invalidateAwardIndex();
   // New award notices may resolve earlier predictions; new tenders may match companies.
   const graded = await gradePredictions();
   await enqueueAutopilot({ kind: 'sweep' });
   await enqueueAutopilot({ kind: 'backtest' });
-  return { ...result, graded: graded.graded };
+  return { ...result, graded: graded.graded, groupements: parties?.consortia ?? null };
 }
 
 async function processAutopilot(job: Job<AutopilotJobData>) {

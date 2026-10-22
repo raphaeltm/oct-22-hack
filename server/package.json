@@ -9,7 +9,9 @@
     "import:ted": "tsx src/importers/ted.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx -e \"import('./src/db/index.ts').then(async (m) => { await m.runMigrations(); await m.pool.end(); })\"",
-    "seed:demo": "tsx src/seed/demo.ts"
+    "seed:demo": "tsx src/seed/demo.ts",
+    "import:ted-parties": "tsx src/importers/ted-parties.ts",
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@better-auth/oauth-provider": "^1.7.12",

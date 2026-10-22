@@ -10,6 +10,7 @@ const NAV = [
   { to: '/autopilot', label: 'Autopilot', icon: 'spark' },
   { to: '/tenders', label: 'Tenders', icon: 'tenders' },
   { to: '/competitors', label: 'Competitors', icon: 'competitors' },
+  { to: '/partners', label: 'Partners', icon: 'handshake' },
   { to: '/company', label: 'Company', icon: 'company' },
 ];
 
