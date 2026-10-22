@@ -207,8 +207,8 @@ export type Learned = {
 
 export type Scorecard = {
   live: { predicted: number; graded: number; pending: number; top5Hits: number; incumbentGraded: number; incumbentHits: number };
-  backtest: { graded: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
-  baseline: { graded: number; top5Hits: number };
+  backtest: { graded: number; predicted: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
+  baseline: { graded: number; predicted: number; top5Hits: number };
   examples: {
     tenderId: string; publicationNumber: string; title: string; buyerName: string | null; url: string | null; awardUrl: string | null;
     source: string; predicted: { name: string; hit: boolean }[]; winners: string[];
