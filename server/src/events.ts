@@ -41,6 +41,9 @@ export async function* subscribeTo<T = unknown>(key: string, lastId: string, sig
       const [last] = await conn.xrevrange(key, '+', '-', 'COUNT', 1);
       lastId = last?.[0] ?? '0-0';
     }
+    // Flush an initial heartbeat only after the stream cursor is pinned.
+    // The UI can now enable sending without racing subscription setup.
+    yield null;
     while (!signal.aborted) {
       const res = await conn.xread('BLOCK', 15000, 'STREAMS', key, lastId).catch((err) => {
         if (signal.aborted) return null;

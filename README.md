@@ -142,3 +142,7 @@ The product flow above is the target; unchecked items below are still planned.
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
 Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `KEENABLE_API_KEY` are secrets; `MODEL` and `BETTER_AUTH_URL` are variables.
+
+## Validation
+
+Run `npm run check` to typecheck both workspaces and build the production frontend. Docker strips development dependencies from its runtime image.
