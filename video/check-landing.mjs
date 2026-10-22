@@ -41,7 +41,26 @@ async function open(viewport) {
   const vtt = await page.evaluate(async () => { const r = await fetch('/media/radar-film.vtt'); return { status: r.status, body: (await r.text()).slice(0, 6) }; });
   ok('captions file served', vtt.status === 200 && vtt.body === 'WEBVTT', JSON.stringify(vtt));
   await page.locator('#film').screenshot({ path: OUT + 'desktop-playing.png' });
+  await page.locator('.lp-problem').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1200);
+  ok('pauses when scrolled to another panel', await page.evaluate(() => document.querySelector('.lp-film-frame video').paused));
   ok('no page errors (desktop)', errors.length === 0, errors.join('; '));
+  await page.close();
+}
+
+// the film panel fits one screen in the horizontal (desktop) layout
+for (const vp of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 1920, height: 1080 }]) {
+  const { page } = await open(vp);
+  await page.waitForTimeout(600);
+  const r = await page.evaluate(() => {
+    const f = document.querySelector('.lp-film-frame').getBoundingClientRect();
+    const n = document.querySelector('.lp-film-note').getBoundingClientRect();
+    const h = document.querySelector('.lp-film .lp-kicker').getBoundingClientRect();
+    const nav = document.querySelector('.lp-nav').getBoundingClientRect();
+    return { top: h.top, navBottom: nav.bottom, noteBottom: n.bottom, w: Math.round(f.width), left: f.left, right: f.right };
+  });
+  ok(`film panel fits ${vp.width}x${vp.height}`, r.noteBottom <= vp.height && r.top >= r.navBottom && r.left >= 0 && r.right <= vp.width, JSON.stringify(r));
+  await page.screenshot({ path: OUT + `panel-${vp.width}.png` });
   await page.close();
 }
 

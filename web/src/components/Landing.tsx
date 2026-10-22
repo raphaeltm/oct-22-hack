@@ -685,6 +685,15 @@ function Film() {
   const video = useRef<HTMLVideoElement>(null);
   const [state, setState] = useState<'idle' | 'playing' | 'error'>('idle');
 
+  // Pause when the visitor scrolls to another panel.
+  useEffect(() => {
+    const v = video.current;
+    if (!v || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting && !v.paused) v.pause(); }, { threshold: 0.25 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+
   const play = () => {
     const v = video.current;
     if (!v) return;

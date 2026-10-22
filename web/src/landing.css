@@ -216,10 +216,11 @@
 [data-reveal].in { opacity: 1; transform: none; }
 
 /* film */
-.lp-film { padding-bottom: clamp(40px, 6vw, 80px); }
-.lp-film-head { margin-bottom: clamp(36px, 5vw, 56px); }
+.lp-film { padding-top: clamp(96px, 13vh, 130px); }
+.lp-film .lp-h2 { margin-top: 14px; font-size: clamp(30px, 3.8vw, 54px); }
+.lp-film-head { margin-bottom: clamp(20px, 3.5vh, 40px); }
 .lp-film-frame {
-  position: relative; overflow: hidden; aspect-ratio: 16 / 9; border-radius: clamp(16px, 2.4vw, 28px);
+  position: relative; width: min(100%, calc((100vh - 370px) * 16 / 9)); min-width: min(100%, 520px); overflow: hidden; aspect-ratio: 16 / 9; border-radius: clamp(16px, 2.4vw, 28px);
   background: var(--lp-ink);
   box-shadow: 0 60px 120px -50px rgb(10 21 16 / 0.6), 0 0 0 1px rgb(10 21 16 / 0.08);
 }
@@ -243,7 +244,7 @@
 .lp-film-cta b { font-family: var(--display); font-size: clamp(17px, 1.6vw, 22px); letter-spacing: -0.02em; }
 .lp-film-cta .lp-mono { color: var(--lp-on-ink-2); font-size: 12.5px; }
 .lp-film-frame.error .lp-film-icon { background: var(--lp-on-ink-2); animation: none; }
-.lp-film-note { margin-top: 18px; }
+.lp-film-note { margin-top: 14px; }
 
 /* problem */
 .lp-pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 40px; border-top: 1px solid var(--lp-paper-line); }
@@ -474,6 +475,7 @@
     scroll-snap-align: unset;
   }
   .lp-section { padding: clamp(60px, 10vw, 120px) 0; }
+  .lp-film-frame { width: 100%; min-width: 0; }
   .lp-hero { padding: 120px clamp(20px, 5vw, 72px) 60px; }
   [data-reveal] { transform: translateY(34px); }
   .lp-auto-grid { grid-template-columns: 1fr; }
