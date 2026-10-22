@@ -11,12 +11,42 @@ export type Company = {
   name: string;
   pitch: string;
   cpv: string[];
-  countries: string[];
+  countries: string[]; // ISO-3, derived from regions
+  regions: string[];
   keywords: string[];
   min_value: number | null;
   max_value: number | null;
   learned_rules: string;
+  size: string | null;
+  services: string[];
+  sectors: string[];
+  differentiators: string[];
+  profile: Record<string, unknown>;
 };
+
+// regions hold free text ("France", "Auvergne-Rhône-Alpes") or ISO-3 codes.
+const COUNTRY_NAMES: Record<string, string> = {
+  france: 'FRA', belgium: 'BEL', belgique: 'BEL', luxembourg: 'LUX', germany: 'DEU', allemagne: 'DEU',
+  netherlands: 'NLD', 'pays-bas': 'NLD', spain: 'ESP', espagne: 'ESP', italy: 'ITA', italie: 'ITA',
+  portugal: 'PRT', ireland: 'IRL', austria: 'AUT', switzerland: 'CHE', suisse: 'CHE', poland: 'POL',
+  sweden: 'SWE', denmark: 'DNK', finland: 'FIN', czechia: 'CZE', greece: 'GRC', romania: 'ROU',
+};
+const FRENCH_REGIONS = /auvergne|rh[oô]ne|bretagne|normandie|occitanie|provence|hauts-de-france|grand est|nouvelle-aquitaine|pays de la loire|centre|bourgogne|corse|[iî]le-de-france|paris|lyon|marseille|toulouse|lille|bordeaux|nantes/i;
+
+export function countriesOf(regions: string[]): string[] {
+  const out = new Set<string>();
+  for (const r of regions) {
+    const t = r.trim();
+    if (/^[A-Z]{3}$/.test(t)) out.add(t);
+    else if (COUNTRY_NAMES[t.toLowerCase()]) out.add(COUNTRY_NAMES[t.toLowerCase()]);
+    else if (FRENCH_REGIONS.test(t)) out.add('FRA');
+  }
+  return [...out];
+}
+
+function toCompany(r: any): Company {
+  return { ...r, countries: countriesOf(r.regions ?? []), profile: r.profile ?? {} };
+}
 
 export type PastBid = {
   id: string;
@@ -28,18 +58,18 @@ export type PastBid = {
   summary: string;
 };
 
-const COMPANY_COLS = `id, name, coalesce(description, '') as pitch, cpv_codes as cpv, regions as countries, keywords,
-  min_value::float as min_value, max_value::float as max_value, learned_rules`;
+const COMPANY_COLS = `id, name, coalesce(description, '') as pitch, cpv_codes as cpv, regions, keywords,
+  min_value::float as min_value, max_value::float as max_value, learned_rules, size, services, sectors, differentiators, profile`;
 
 export async function getCompany(id: string): Promise<Company | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const { rows } = await pool.query(`select ${COMPANY_COLS} from companies where id = $1`, [id]);
-  return rows[0] ?? null;
+  return rows[0] ? toCompany(rows[0]) : null;
 }
 
 export async function listCompanies(): Promise<Company[]> {
   const { rows } = await pool.query(`select ${COMPANY_COLS} from companies order by created_at`);
-  return rows;
+  return rows.map(toCompany);
 }
 
 export type ProfileInput = {
@@ -52,13 +82,23 @@ export type ProfileInput = {
   maxValue?: number | null;
 };
 
-export async function createCompany(p: ProfileInput): Promise<string> {
+/** Create (or replace) the user's company profile; one company per user. */
+export async function createCompany(userId: string, p: ProfileInput): Promise<string> {
   const { rows } = await pool.query(
-    `insert into companies (name, description, cpv_codes, regions, keywords, min_value, max_value)
-     values ($1,$2,$3,$4,$5,$6,$7) returning id`,
-    [p.name, p.pitch, p.cpv, p.countries, p.keywords, p.minValue ?? null, p.maxValue ?? null],
+    `insert into companies (user_id, name, description, cpv_codes, regions, keywords, min_value, max_value)
+     values ($1,$2,$3,$4,$5,$6,$7,$8)
+     on conflict (user_id) do update set name = excluded.name, description = excluded.description, cpv_codes = excluded.cpv_codes,
+       regions = excluded.regions, keywords = excluded.keywords, min_value = excluded.min_value, max_value = excluded.max_value, updated_at = now()
+     returning id`,
+    [userId, p.name, p.pitch, p.cpv, p.countries, p.keywords, p.minValue ?? null, p.maxValue ?? null],
   );
   return rows[0].id;
+}
+
+export async function companyOwnedBy(companyId: string, userId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(companyId)) return false;
+  const { rowCount } = await pool.query('select 1 from companies where id = $1 and user_id = $2', [companyId, userId]);
+  return Boolean(rowCount);
 }
 
 export async function updateCompany(id: string, p: ProfileInput) {

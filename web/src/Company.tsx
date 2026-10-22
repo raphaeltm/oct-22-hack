@@ -211,6 +211,7 @@ function AddBid({ companyId, onAdded }: { companyId: string; onAdded: () => void
 
 /** Onboarding: one paragraph in, a full radar profile out. */
 export function Onboarding({ onCreated, onCancel }: { onCreated: (id: string) => void; onCancel?: () => void }) {
+  // Replaces the signed-in user's firm profile (one firm per account).
   const [description, setDescription] = useState('');
   const [draft, setDraft] = useState<ProfileDraft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -242,7 +243,7 @@ export function Onboarding({ onCreated, onCancel }: { onCreated: (id: string) =>
 
   return (
     <div className="page onboarding">
-      <h2>Add a firm to watch</h2>
+      <h2>{onCancel ? 'Rebuild your firm profile' : 'Tell the radar about your firm'}</h2>
       {!draft ? (
         <form className="card" onSubmit={generate}>
           <label>

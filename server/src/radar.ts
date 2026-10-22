@@ -53,9 +53,18 @@ export function quickScore(c: Company, t: Tender) {
 export async function companyContext(c: Company) {
   const [bids, decisions] = await Promise.all([getPastBids(c.id), getDecisions(c.id)]);
   return [
-    `FIRM: ${c.name}`,
+    `FIRM: ${c.name}${c.size ? ` (${c.size})` : ''}`,
     c.pitch,
-    `Target CPV families: ${c.cpv.join(', ') || 'any'}. Countries: ${c.countries.join(', ') || 'any'}.`,
+    c.services.length ? `Services: ${c.services.join('; ')}` : '',
+    c.sectors.length ? `Customers: ${c.sectors.join('; ')}` : '',
+    c.differentiators.length ? `Differentiators: ${c.differentiators.join('; ')}` : '',
+    Array.isArray(c.profile.pastWins) && c.profile.pastWins.length
+      ? `Other past wins: ${(c.profile.pastWins as { title?: string; buyer?: string }[]).map((w) => `${w.title ?? ''} (${w.buyer ?? ''})`).join('; ')}`
+      : '',
+    Array.isArray(c.profile.knownCompetitors) && c.profile.knownCompetitors.length
+      ? `Known competitors: ${(c.profile.knownCompetitors as unknown[]).map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join('; ')}`
+      : '',
+    `Target CPV families: ${c.cpv.join(', ') || 'any'}. Where: ${c.regions.join(', ') || 'anywhere'}.`,
     `Sweet spot contract value: ${c.min_value ?? '?'} - ${c.max_value ?? '?'} EUR.`,
     bids.length
       ? `PAST BIDS:\n${bids.map((b) => `- [${b.outcome.toUpperCase()}] ${b.title} for ${b.buyer} (${b.year ?? '?'}, ${b.value ? `€${b.value}` : 'value n/a'}): ${b.summary}`).join('\n')}`

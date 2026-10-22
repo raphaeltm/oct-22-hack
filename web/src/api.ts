@@ -86,7 +86,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => req<{ model: string | null; redis: boolean; db: boolean }>('/api/health'),
-  companies: () => req<{ companies: { id: string; name: string }[] }>('/api/companies'),
+  me: () => req<{ user: { id: string; email: string; name: string }; company: { id: string; name: string } | null }>('/api/me'),
   company: (id: string) => req<{ company: Company; pastBids: PastBid[] }>(`/api/companies/${id}`),
   draftProfile: (description: string) =>
     req<{ profile: ProfileDraft }>('/api/companies/draft', { method: 'POST', body: JSON.stringify({ description }) }),

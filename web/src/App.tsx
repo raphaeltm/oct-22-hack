@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Analyst } from './Analyst';
 import { ago, api, money, shortDate, useEventStream, VERDICT_LABEL, type Match, type Stats } from './api';
 import { CompanyPage, Onboarding } from './Company';
+import { SignOutButton } from './Login';
 import { Radar } from './Radar';
 
 type View = 'radar' | 'analyst' | 'company' | 'new';
@@ -18,18 +19,11 @@ function readView(): View {
   return v === 'analyst' || v === 'company' || v === 'new' ? v : 'radar';
 }
 
-function storedCompany() {
-  try {
-    return localStorage.getItem('companyId');
-  } catch {
-    return null;
-  }
-}
-
 export function App() {
   const [view, setView] = useState<View>(readView);
-  const [companies, setCompanies] = useState<{ id: string; name: string }[] | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(storedCompany);
+  // One company per signed-in user (null until loaded, undefined = none yet).
+  const [company, setCompany] = useState<{ id: string; name: string } | null | undefined>(undefined);
+  const companyId = company?.id ?? null;
   const [matches, setMatches] = useState<Match[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [sweeping, setSweeping] = useState(false);
@@ -48,23 +42,15 @@ export function App() {
     setView(v);
   };
 
-  const loadCompanies = useCallback(async () => {
-    const { companies } = await api.companies();
-    setCompanies(companies);
-    setCompanyId((cur) => (cur && companies.some((c) => c.id === cur) ? cur : companies[0]?.id ?? null));
+  const loadCompany = useCallback(async () => {
+    const { company } = await api.me();
+    setCompany(company ? { id: company.id, name: company.name } : null);
   }, []);
 
   useEffect(() => {
-    void loadCompanies();
+    void loadCompany();
     api.health().then((h) => setModelReady(Boolean(h.model))).catch(() => {});
-  }, [loadCompanies]);
-
-  useEffect(() => {
-    if (!companyId) return;
-    try {
-      localStorage.setItem('companyId', companyId);
-    } catch {}
-  }, [companyId]);
+  }, [loadCompany]);
 
   const refresh = useCallback(async () => {
     if (!companyId) return;
@@ -124,15 +110,16 @@ export function App() {
     await api.scan(companyId);
   }
 
-  if (companies && !companies.length && view !== 'new') {
+  if (company === undefined) return <p className="auth-loading">Loading…</p>;
+  if (company === null) {
     return (
       <div className="solo">
-        <Onboarding onCreated={(id) => void loadCompanies().then(() => (setCompanyId(id), go('radar')))} />
+        <Onboarding onCreated={() => void loadCompany().then(() => go('radar'))} />
       </div>
     );
   }
 
-  const name = companies?.find((c) => c.id === companyId)?.name ?? '';
+  const name = company.name;
   const lastScan = stats?.lastScan;
   const emptyHint = sweeping ? (
     <p>Reading TED for {name}…</p>
@@ -166,21 +153,11 @@ export function App() {
           </span>
         </div>
 
-        <label className="firm">
+        <div className="firm">
           <span className="firm-label">Watching for</span>
-          <select
-            value={companyId ?? ''}
-            onChange={(e) => (e.target.value === '__new' ? go('new') : setCompanyId(e.target.value))}
-            aria-label="Firm"
-          >
-            {companies?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-            <option value="__new">+ Add a firm…</option>
-          </select>
-        </label>
+          <span className="firm-name">{name}</span>
+          <SignOutButton />
+        </div>
 
         <nav className="nav">
           {VIEWS.map((v) => (
@@ -210,10 +187,7 @@ export function App() {
       <main className="main">
         {!modelReady && <p className="banner">No model key is configured, so tenders get a quick keyword score only and the analyst is offline.</p>}
         {view === 'new' ? (
-          <Onboarding
-            onCreated={(id) => void loadCompanies().then(() => (setCompanyId(id), go('radar')))}
-            onCancel={() => go('radar')}
-          />
+          <Onboarding onCreated={() => void loadCompany().then(() => go('radar'))} onCancel={() => go('radar')} />
         ) : !companyId ? null : (
           <>
             <header className="top">

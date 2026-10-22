@@ -1,6 +1,10 @@
 import { Mastra } from '@mastra/core';
-import { storage } from './agent';
+import { assistant, storage } from './agent';
 
-export const mastra = new Mastra({ storage });
+export const mastra = new Mastra({
+  agents: { assistant },
+  storage,
+});
 
-export { draftProfile, makeAnalyst, memory } from './agent';
+export { memory } from './agent';
+export { draftProfile, makeAnalyst } from './analyst';

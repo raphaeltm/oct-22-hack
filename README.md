@@ -1,73 +1,63 @@
 # oct-22-hack
 
-# oct-22-hack
+**An RFP research copilot.** It imports public tender (RFP) data and lets a company tell its agent about itself through chat. The agent then uses that profile to enrich the tenders and research the competitors the company is up against.
 
-## Idea: Procurement Radar for SMEs
+Built for the 2026-10-22 hackathon. The challenge is to build a product where agents depend on data to deliver value for a specific user. The research behind the idea is in [ideas.md](ideas.md).
 
-Agents watch EU public tender feeds (TED) and national portals, match each notice against a company's capabilities and past bids, and draft a go/no-go brief plus a first-pass response.
+## The product
 
-See [ideas.md](ideas.md) for the wider RFP-space research and YC landscape.
+**Who it's for:** small French/EU IT and AI consultancies (5–50 people) selling to the public sector. They miss relevant notices, spend days reading specifications, and struggle to judge which bids they could win. Starting with CPV division 72 (IT services) keeps the demo focused.
 
-### Target customer
+**First 10 users:** reach public-sector IT vendors through LinkedIn, France Digitale and local tech communities; offer a free weekly “tenders you're missing” digest.
 
-**Small French/EU IT and AI consultancies (5-50 people) that sell to the public sector.**
+**What it does:**
 
-- Filterable with one CPV division (72, IT services), so the scope stays tight for a one-day build.
-- Their pain: they miss relevant notices, lose days reading long specs, and can't tell which bids they could win.
-- Reachable: public-sector IT vendors are easy to find (LinkedIn, France Digitale, local tech communities), and our hackathon peers are the same profile.
-- First 10 users: offer a free weekly "tenders you're missing" digest.
-- Alternatives considered: small construction firms (CPV 45; high volume, less tech-savvy) and CSRD/environmental consultancies (hot market, thinner data).
+1. **Imports RFP data.** It loads tender notices, plus award data where available, from a public source into Postgres.
+2. **Builds a company profile through chat.** The user tells the agent about the company: services, sectors, regions, size, past wins and differentiators. The agent stores this as long-term memory and refines it over time.
+3. **Augments tenders.** The agent enriches the imported tenders with tags, summaries and a fit score against the company profile.
+4. **Researches competitors.** For a tender or sector, the agent combines Keenable web search with award data to find likely competitors. It summarises their strengths, recent wins and positioning compared with the user's company, and saves the findings for reuse.
 
-### Datasets
+**Target demo flow:** onboard a company in chat → see matching tenders → pick one → get a competitor brief.
 
-| Source | Use | Notes |
+## Data and demo scope
+
+Start with TED notices for **France (`buyer-country=FRA`), CPV 72*, published from 2025 onward**. Tender text is in French. Past award winners provide the starting set of competitors; Keenable search + Claude enrich their profiles. A past win is evidence of relevant experience, not proof that a company will bid on a new tender.
+
+| Source | Role | Scope |
 | --- | --- | --- |
-| **TED Search API v3** (`https://api.ted.europa.eu/v3/notices/search`) | Live and recent notices, EU-wide | Public, no API key or login. Filter by country, CPV, date. Returns buyer, deadline, estimated value, notice URL. Check TED's fair usage policy and rate limits. |
-| **TED bulk XML download** | Backfill history into OpenSearch/ClickHouse | Lets the demo run without depending on live API calls. |
-| **TED Open Data Service** (SPARQL, data.ted.europa.eu) | Cross-notice queries, e.g. who won what at what price | More powerful, steeper learning curve. Stretch goal. |
-| **BOAMP / DECP** (France, via data.gouv.fr) | French national notices and awarded contracts | Adds Paris/France depth. API formats not yet verified, so check before relying on them. |
+| TED Search API v3 | Import tender notices and contract awards | Primary source for the MVP |
+| TED bulk XML | Backfill history or prepare a reproducible demo dataset | Fallback if live imports are unreliable |
+| TED Open Data Service (SPARQL) | Cross-notice analysis of winners and prices | Future exploration |
+| BOAMP / DECP | Add French national notices and awarded contracts | Future expansion; integration still needs verification |
 
-Fallback: Apify actors wrap the TED API with normalized fields, but a direct call is simple enough and gives us control.
+**Demo company:** *Rivage Numérique*, a fictional Lyon digital consultancy specialising in RGAA accessibility, DSFR, sovereign cloud and collectivités.
 
-### Agent pipeline
+**Demo story:** describe Rivage Numérique in chat → inspect matching French IT tenders and the reasons for each match → select one → review past award winners and a sourced competitor brief. Compare the time needed to qualify a tender manually with the assisted workflow. Any counts, fit scores or time savings shown must come from the actual demo run.
 
-1. **Ingest agent**: polls TED for new CPV 72 notices. Valkey/Redis dedupes.
-2. **Matching agent**: scores each tender against the company profile and past bids, and explains why.
-3. **Qualification agent**: reads tender documents and flags deal-breakers (turnover thresholds, certifications, deadlines).
-4. **Drafting agent**: produces a first-pass response outline grounded in past bids.
-5. **Learning loop**: the user marks bid / skip / won / lost, and the matcher reweights. Past awards show who wins and at what price.
+**Later radar features:** scheduled monitoring, document qualification, first-pass response drafting, and bid / skip / won / lost feedback. The hackathon focuses on one research workflow end to end.
 
-### Data layer (Aiven)
+## Stack
 
-| Service | Role |
+The scope is deliberately small so it can ship in about 5 hours.
+
+| Layer | Choice |
 | --- | --- |
-| PostgreSQL (+ pgvector) | Company profiles, bid history, feedback, embeddings, agent memory |
-| OpenSearch | Full-text and semantic tender search |
-| Valkey | Dedupe, alert queue, hot cache, event streams |
-| ClickHouse | Analytics: win rates by buyer, price benchmarks, trends |
+| Agent | [Mastra](https://mastra.ai) + Claude (Anthropic API) |
+| Web search | Keenable API |
+| Data | **Postgres for everything**: tenders, company profiles, agent memory, competitor research, and pgvector if we need embeddings |
+| Realtime / cache | Redis Streams for chat and job events over SSE; BullMQ for TED import and competitor research jobs |
+| API | Hono (`server/`) |
+| UI | Vite + React chat (`web/`) |
+| Infra | Docker Compose, both locally and for deploys |
 
-### Demo story
-
-"Meet *Atelier Nova*, a 12-person Paris AI consultancy. Last month they found 3 relevant tenders by hand. The radar found 41, ranked them, and explained why 6 are a strong fit. After the user rated 10, match precision rose from X% to Y%." The before/after number shown live is the key moment.
-
-### Judging checklist
-
-- A customer we can name, not a vague sector.
-- A visible before/after metric (time saved, tenders found, precision over runs).
-- An architecture slide showing what each Aiven service does.
-- One workflow end to end rather than five half-built ones.
-- One sentence on where we find the first 10 users tomorrow.
-
-## App skeleton
-
-Skeleton agent app: **Mastra** agent with **Postgres**-backed memory, a **Hono** API, **Redis** Streams for realtime events, and a **Vite/React** chat UI.
+**Current deployment:** Docker Compose with Postgres and Redis. OpenSearch, ClickHouse, Kafka and managed Aiven services are outside the current implementation; moving services to Aiven remains a deployment option. Postgres provides tender search and stores the research data for this build.
 
 ```
 server/   Hono API + Mastra agent (src/mastra)
 web/      Vite + React chat UI
 ```
 
-### Local dev
+## Local dev
 
 ```sh
 npm install
@@ -76,54 +66,79 @@ cp .env.example .env     # set ANTHROPIC_API_KEY
 export $(cat .env | xargs) && npm run dev
 ```
 
-Web runs on http://localhost:5173 and proxies `/api` to the server on :3000.
-Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
+The web app runs on http://localhost:5173 and proxies `/api` to the server on :3000.
+Without `ANTHROPIC_API_KEY`, the chat endpoint returns a stub reply.
 
-### API
+## Auth
 
-- `GET  /api/health`
-- `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`; output arrives on the event stream
-- `GET  /api/threads/:threadId/messages` — persisted history (Postgres via Mastra memory)
-- `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
+Email/password login via **BetterAuth** (`server/src/auth.ts`), mounted at `/api/auth/*`. Its tables
+(`user`, `session`, `account`, `verification`) live in the same Postgres and are migrated on server start.
+Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL` (public base URL, default `http://localhost:3000`).
+Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
+handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
+
+## Demo data
+
+`npm run seed:demo` runs migrations, creates the demo user and seeds the fictional **Rivage Numérique** company profile (idempotent, so it's safe to rerun).
+Log in with **`demo@rivage-numerique.fr` / `rivage-demo-2026`** (override with `DEMO_EMAIL` / `DEMO_PASSWORD`).
+The demo script and pitch notes are in [docs/demo.md](docs/demo.md).
+
+## Agent tools
+
+The agent's tools live in `server/src/mastra/tools/*.ts`. Each file exports a group (e.g. `companyTools`), and `tools/index.ts` spreads every group into the agent.
+Tools get the current user with `getUserId(requestContext)` from `server/src/mastra/context.ts`. `runAgent` passes `requestContext: userRequestContext(userId)` to `agent.stream`.
+
+## API
+
+What exists today:
+
+- `GET  /api/health` (public)
+- `POST /api/auth/sign-up/email` `{ name, email, password }`, `POST /api/auth/sign-in/email`, `POST /api/auth/sign-out`
+- `GET /api/me` → `{ user, company }` (company from `companies.user_id`, or `null`)
+- `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`. The output arrives on the event stream.
+- `GET  /api/threads/:threadId/messages` returns the persisted history (Postgres via Mastra memory).
+- `GET  /api/threads/:threadId/events` is an SSE feed of the thread's Redis Stream (`thread:<id>:events`).
   Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
-  Resumes via `Last-Event-ID` or `?since=<stream id>` (`0` replays everything retained).
+  It resumes via `Last-Event-ID` or `?since=<stream id>`; `0` replays everything still retained.
 
-### Deploy
+- `POST /api/jobs/ted-import` `{ since?, limit? }` → `202 { jobId }`; queues a TED import (also runs every 6h)
+- `POST /api/competitors/:id/research` `{ force? }` → `202 { jobId }`; queues Keenable web research on an organisation
+  (searches FR + EN, Claude summary into `organisations.summary`, sources in `research_notes`; skipped if researched < 7 days ago)
+- `GET  /api/jobs/events` — SSE of the `jobs:events` Redis Stream. Events `job.queued | job.active | job.progress | job.completed | job.failed`,
+  each `{ type, queue, jobId, name, at, ... }`; `job.progress` carries `progress: { current, total, message }`. Same resume semantics as thread events.
+
+## Background jobs
+
+BullMQ queues `ted-import` and `research` on `REDIS_URL` (keys prefixed `rfp:`, override with `QUEUE_PREFIX`), processed by in-process workers
+(`server/src/jobs/`). Set `WORKER=0` to run an API-only process, `TED_IMPORT_SCHEDULE=0` to disable the 6-hourly import.
+Web research uses [Keenable](https://docs.keenable.ai/api-reference/search): with `KEENABLE_API_KEY` it calls `/v1/search`,
+otherwise the rate-limited keyless `/v1/search/public` (set `KEENABLE_KEYLESS=0` to disable). Without `ANTHROPIC_API_KEY`
+raw snippets are stored as notes with no summary.
+
+## Roadmap (hackathon)
+
+The product flow above is the target; unchecked items below are still planned.
+
+- [x] Skeleton: Mastra agent + Postgres memory, Hono API, React chat UI
+- [x] BetterAuth email/password login and session-protected API
+- [x] Redis Streams event log with SSE realtime updates
+- [x] Drizzle schema and migrations: tenders, companies, organisations, awards, research notes and tender matches
+- [ ] RFP importer: load a sample dataset from one public source into `tenders`
+- [ ] Agent tool: save and update the company profile from chat
+- [ ] Agent tool: search and filter imported tenders, and match them to the profile
+- [x] Background jobs: Keenable competitor research, with results saved to Postgres
+- [ ] UI: tender list and competitor brief view alongside the chat
+- [x] Demo script and a seeded demo company
+
+## Demo checklist
+
+- Show a specific customer and a complete profile → tender → competitor brief workflow.
+- Show source evidence for matches and competitor claims.
+- Measure a before/after result from the demo, such as qualification time or relevant tenders found.
+- Explain the role of Postgres and Redis and the path to managed services.
+- Explain how the weekly digest reaches the first 10 users.
+
+## Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).
-
-## App skeleton
-
-Skeleton agent app: **Mastra** agent with **Postgres**-backed memory, a **Hono** API, **Redis** Streams for realtime events, and a **Vite/React** chat UI.
-
-```
-server/   Hono API + Mastra agent (src/mastra)
-web/      Vite + React chat UI
-```
-
-### Local dev
-
-```sh
-npm install
-npm run db:up            # local Postgres + Redis via docker-compose.dev.yml
-cp .env.example .env     # set ANTHROPIC_API_KEY
-export $(cat .env | xargs) && npm run dev
-```
-
-Web runs on http://localhost:5173 and proxies `/api` to the server on :3000.
-Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
-
-### API
-
-- `GET  /api/health`
-- `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`; output arrives on the event stream
-- `GET  /api/threads/:threadId/messages` — persisted history (Postgres via Mastra memory)
-- `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
-  Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
-  Resumes via `Last-Event-ID` or `?since=<stream id>` (`0` replays everything retained).
-
-### Deploy
-
-`docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `KEENABLE_API_KEY` are secrets; `MODEL` and `BETTER_AUTH_URL` are variables.
