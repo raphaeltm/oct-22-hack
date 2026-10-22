@@ -6,8 +6,10 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
+    "import:ted": "tsx src/importers/ted.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx -e \"import('./src/db/index.ts').then(async (m) => { await m.runMigrations(); await m.pool.end(); })\""
+    "db:migrate": "tsx -e \"import('./src/db/index.ts').then(async (m) => { await m.runMigrations(); await m.pool.end(); })\"",
+    "seed:demo": "tsx src/seed/demo.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
@@ -15,6 +17,7 @@
     "@mastra/memory": "^1.39.0",
     "@mastra/pg": "^1.32.0",
     "better-auth": "^1.7.12",
+    "bullmq": "^6.4.0",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.13",
     "ioredis": "^6.0.0",

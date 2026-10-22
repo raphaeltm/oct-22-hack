@@ -45,7 +45,7 @@ The scope is deliberately small so it can ship in about 5 hours.
 | Agent | [Mastra](https://mastra.ai) + Claude (Anthropic API) |
 | Web search | Keenable API |
 | Data | **Postgres for everything**: tenders, company profiles, agent memory, competitor research, and pgvector if we need embeddings |
-| Realtime / cache | Redis Streams for chat run events, streamed to the UI over SSE. Also available for search-result caching or background jobs if we need them |
+| Realtime / cache | Redis Streams for chat and job events over SSE; BullMQ for TED import and competitor research jobs |
 | API | Hono (`server/`) |
 | UI | Vite + React chat (`web/`) |
 | Infra | Docker Compose, both locally and for deploys |
@@ -77,6 +77,17 @@ Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL
 Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
 handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
 
+## Demo data
+
+`npm run seed:demo` runs migrations, creates the demo user and seeds the fictional **Rivage Numérique** company profile (idempotent, so it's safe to rerun).
+Log in with **`demo@rivage-numerique.fr` / `rivage-demo-2026`** (override with `DEMO_EMAIL` / `DEMO_PASSWORD`).
+The demo script and pitch notes are in [docs/demo.md](docs/demo.md).
+
+## Agent tools
+
+The agent's tools live in `server/src/mastra/tools/*.ts`. Each file exports a group (e.g. `companyTools`), and `tools/index.ts` spreads every group into the agent.
+Tools get the current user with `getUserId(requestContext)` from `server/src/mastra/context.ts`. `runAgent` passes `requestContext: userRequestContext(userId)` to `agent.stream`.
+
 ## API
 
 What exists today:
@@ -90,6 +101,20 @@ What exists today:
   Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
   It resumes via `Last-Event-ID` or `?since=<stream id>`; `0` replays everything still retained.
 
+- `POST /api/jobs/ted-import` `{ since?, limit? }` → `202 { jobId }`; queues a TED import (also runs every 6h)
+- `POST /api/competitors/:id/research` `{ force? }` → `202 { jobId }`; queues Keenable web research on an organisation
+  (searches FR + EN, Claude summary into `organisations.summary`, sources in `research_notes`; skipped if researched < 7 days ago)
+- `GET  /api/jobs/events` — SSE of the `jobs:events` Redis Stream. Events `job.queued | job.active | job.progress | job.completed | job.failed`,
+  each `{ type, queue, jobId, name, at, ... }`; `job.progress` carries `progress: { current, total, message }`. Same resume semantics as thread events.
+
+## Background jobs
+
+BullMQ queues `ted-import` and `research` on `REDIS_URL` (keys prefixed `rfp:`, override with `QUEUE_PREFIX`), processed by in-process workers
+(`server/src/jobs/`). Set `WORKER=0` to run an API-only process, `TED_IMPORT_SCHEDULE=0` to disable the 6-hourly import.
+Web research uses [Keenable](https://docs.keenable.ai/api-reference/search): with `KEENABLE_API_KEY` it calls `/v1/search`,
+otherwise the rate-limited keyless `/v1/search/public` (set `KEENABLE_KEYLESS=0` to disable). Without `ANTHROPIC_API_KEY`
+raw snippets are stored as notes with no summary.
+
 ## Roadmap (hackathon)
 
 The product flow above is the target; unchecked items below are still planned.
@@ -101,9 +126,9 @@ The product flow above is the target; unchecked items below are still planned.
 - [ ] RFP importer: load a sample dataset from one public source into `tenders`
 - [ ] Agent tool: save and update the company profile from chat
 - [ ] Agent tool: search and filter imported tenders, and match them to the profile
-- [ ] Agent tool: Keenable search for competitor research, with results saved to Postgres
+- [x] Background jobs: Keenable competitor research, with results saved to Postgres
 - [ ] UI: tender list and competitor brief view alongside the chat
-- [ ] Demo script and a seeded demo company
+- [x] Demo script and a seeded demo company
 
 ## Demo checklist
 
@@ -116,4 +141,4 @@ The product flow above is the target; unchecked items below are still planned.
 ## Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` and `BETTER_AUTH_SECRET` are secrets; `MODEL` and `BETTER_AUTH_URL` are variables. `KEENABLE_API_KEY` will be added once search is wired up.
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `KEENABLE_API_KEY` are secrets; `MODEL` and `BETTER_AUTH_URL` are variables.

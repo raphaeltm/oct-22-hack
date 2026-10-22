@@ -6,7 +6,11 @@ import { eq } from 'drizzle-orm';
 import { auth, requireAuth, runAuthMigrations, sessionMiddleware, type AuthVariables } from './auth';
 import { db, runMigrations, schema } from './db';
 import { publish, redis, subscribe } from './events';
+import { jobsRoutes } from './jobs/routes';
+import { startWorkers } from './jobs/worker';
 import { mastra, memory } from './mastra';
+import { userRequestContext } from './mastra/context';
+import { data } from './routes/data';
 
 const hasModelKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
@@ -42,6 +46,9 @@ async function threadAccess(threadId: string, userId: string) {
   if (!thread) return 'missing' as const;
   return thread.resourceId === userId ? ('owned' as const) : ('forbidden' as const);
 }
+
+// Read-only TED data (tenders, competitors); behind the auth middleware above.
+app.route('/api', data);
 
 app.get('/api/threads/:threadId/messages', async (c) => {
   const threadId = c.req.param('threadId');
@@ -95,6 +102,7 @@ async function runAgent(threadId: string, resourceId: string, runId: string, mes
       const agent = mastra.getAgent('assistant');
       const result = await agent.stream(message, {
         memory: { thread: threadId, resource: resourceId },
+        requestContext: userRequestContext(resourceId),
       });
       for await (const delta of result.textStream) {
         await publish(threadId, { type: 'text.delta', runId, delta });
@@ -125,12 +133,16 @@ app.get('/api/threads/:threadId/events', async (c) => {
   });
 });
 
+// Background jobs: POST /api/jobs/ted-import, POST /api/competitors/:id/research, GET /api/jobs/events
+app.route('/api', jobsRoutes);
+
 // Serve the built frontend in production.
 app.use('/*', serveStatic({ root: './public' }));
 app.get('*', serveStatic({ path: './public/index.html' }));
 
 await runMigrations();
 await runAuthMigrations();
+if (process.env.WORKER !== '0') await startWorkers();
 
 const port = Number(process.env.PORT ?? 3000);
 serve({ fetch: app.fetch, port }, () => console.log(`server listening on :${port}`));
