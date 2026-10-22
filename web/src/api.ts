@@ -57,7 +57,14 @@ export type Match = {
   rationale: string | null;
   /** 'recent' = recently published but the deadline passed or is not stated. */
   status: 'open' | 'recent';
+  /** "Bid together?" signal: capabilities the company lacks, and whether the value is large for its size. */
+  teaming: Teaming | null;
 };
+
+export type Teaming = { gaps: string[]; large: boolean };
+
+/** True when a tender is worth bidding as a groupement rather than alone. */
+export const needsPartner = (t: Teaming | null | undefined) => !!t && (t.gaps.length > 0 || t.large);
 
 export type MatchRefresh = { matches: Match[]; notes: string[]; polished: boolean };
 
@@ -649,6 +656,7 @@ function toMatch(m: any): Match {
     score: normaliseScore(Number(m.score ?? 0)),
     rationale: m.rationale ?? null,
     status: m.status === 'recent' ? 'recent' : 'open',
+    teaming: m.teaming ? { gaps: arr<string>(m.teaming.gaps), large: !!m.teaming.large } : null,
   };
 }
 

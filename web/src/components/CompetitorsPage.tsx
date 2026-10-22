@@ -14,17 +14,17 @@ export function CompetitorsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Competitors"
+        eyebrow="Market"
         title="Who wins in your market"
-        subtitle="Companies that have won comparable French public IT contracts, from TED award notices."
+        subtitle="Firms that have won comparable French public IT contracts, from TED award notices. Each is a rival, or a groupement partner if they cover what you don't."
         mock={mock}
-        actions={<AskButton variant="secondary" label="Summarise the field" prompt="Summarise our competitive landscape: which firms win the most contracts like ours, with which buyers, and where are they weakest?" />}
+        actions={<AskButton variant="secondary" label="Rivals or partners?" prompt="Go through the firms that win contracts like ours: which ones complement us and would make good groupement partners, and which are direct rivals? Cite their TED awards." />}
       />
 
       <div className="toolbar">
         <label className="search">
           <Icon name="search" size={16} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search competitors" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search firms" />
         </label>
       </div>
 

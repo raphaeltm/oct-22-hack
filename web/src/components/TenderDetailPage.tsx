@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { api } from '../api';
 import { DossierPanel } from './Autopilot';
 import { PartnerFinderPanel } from './Partners';
+import { TeamingChip } from './TendersPage';
 import {
   AskButton,
   DeadlineChip,
@@ -39,7 +40,7 @@ export function TenderDetailPage() {
 
   return (
     <>
-      <Link to="/tenders" className="back"><Icon name="back" size={16} /> All tenders</Link>
+      <Link to="/tenders" className="back"><Icon name="back" size={16} /> Opportunities</Link>
       <PageHeader
         eyebrow={
           <>
@@ -59,7 +60,8 @@ export function TenderDetailPage() {
               </a>
             )}
             <AskButton
-              prompt={`Give me a competitor brief for tender ${tender.publicationNumber}: ${tender.title}. Who is likely to bid, what have they won with ${tender.buyerName ?? 'this buyer'}, and how should we position against them?`}
+              label="Who should we bid with?"
+              prompt={`For tender ${tender.publicationNumber} (${tender.title}), should we bid alone or as a groupement? Which capabilities would a partner need to bring, which firms could fill them (cite their TED awards and past joint bids), and who are we likely to face?`}
             />
           </>
         }
@@ -87,9 +89,19 @@ export function TenderDetailPage() {
           <div>
             <h3>Why it matches</h3>
             <p>{match.rationale ?? 'No rationale recorded.'}</p>
+            <TeamingChip teaming={match.teaming} />
           </div>
         </section>
       )}
+
+      {awards.length > 0 && (
+        <section className="card">
+          <h2 className="section-title">Awarded to</h2>
+          <AwardTable awards={awards} showTender={false} />
+        </section>
+      )}
+
+      {!isAward && <PartnerFinderPanel tenderId={tender.id} />}
 
       {description && (
         <section className="card">
@@ -103,27 +115,21 @@ export function TenderDetailPage() {
         </section>
       )}
 
-      {awards.length > 0 && (
-        <section className="card">
-          <h2 className="section-title">Awarded to</h2>
-          <AwardTable awards={awards} showTender={false} />
-        </section>
-      )}
-
       {!isAward && <DossierPanel tenderId={tender.id} onFeedback={matches.reload} />}
-
-      {!isAward && <PartnerFinderPanel tenderId={tender.id} />}
 
       <section className="brief">
         <div className="section-head">
           <div>
-            <h2 className="section-title"><Icon name="trophy" /> Competitor brief</h2>
-            <p className="muted">Firms that have won similar contracts, and what {tender.buyerName ?? 'this buyer'} has awarded before.</p>
+            <h2 className="section-title"><Icon name="trophy" /> Who else wins this work</h2>
+            <p className="muted">
+              Firms that have won similar contracts, and what {tender.buyerName ?? 'this buyer'} has awarded before. Each one is a
+              rival, or a possible partner if they cover what you don't.
+            </p>
           </div>
           <AskButton
             variant="secondary"
-            label="Draft positioning"
-            prompt={`For tender ${tender.publicationNumber} (${tender.title}), draft a short positioning note: how can we differentiate against the likely competitors?`}
+            label="Rival or partner?"
+            prompt={`For tender ${tender.publicationNumber} (${tender.title}), go through the likely competitors: which ones should we team with as a groupement partner (they cover what we don't), and which should we position against? Cite their TED awards.`}
           />
         </div>
 

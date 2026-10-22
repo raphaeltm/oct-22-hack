@@ -8,7 +8,7 @@ const DEMO = { email: 'demo@rivage-numerique.fr', password: 'rivage-demo-2026' }
 
 /** Only allow same-app redirects after login. */
 function safeNext(next: string | null) {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/tenders';
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/partners';
 }
 
 export function Login({ demo = false, signUpFirst = false }: { demo?: boolean; signUpFirst?: boolean }) {
