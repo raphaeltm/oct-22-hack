@@ -55,12 +55,18 @@ Backup: if the model is slow, cut to a pre-recorded run of the same steps and la
 
 ## Evidence it works (upload)
 
+Recorded live run (1:52 MP4) and evidence PDF: SAM library `/hackathon/radar-live-run.mp4`
+and `/hackathon/live-run/radar-evidence.pdf`. Regenerate with `node video/journey.mjs "" out`
+then `node video/journey-pdf.mjs out`. Each run creates a real invite and a *simulated*
+partner reply on dev, so don't re-run it casually.
+
+
 Upload the evidence PDF: `cd video && node evidence.mjs` signs in to dev as the demo
 company, captures the live app and writes `radar-evidence.pdf` along with the live
 scorecard. The live scorecard read 17/151 vs 9/151 at 13:10 UTC (the deck snapshot
 from 11:52 says 18/151). Quote whatever the latest run says. The caption:
 
-> **Backtest against a naive baseline.** We replayed 151 past French IT tenders that now have an award notice. For each one the agent could only see awards published *before* the tender, and the target award was excluded. **An actual winner was in the agent's top 5 for 17 of the 151 tenders. The naive baseline (the 5 most frequent winners in the same CPV area) got 9 of the same 151, so the agent did nearly 2× better.** Both methods were scored on the same tenders, and a tender with no prediction counts as a miss. Live predictions are logged too and graded automatically when the real award is published. Honest limits: 11% is a low absolute hit rate, and a past winner is evidence, not proof of the next bidder. The last similar winner won again only 1 time in 35. The data shows why partnering matters: 155 French IT award notices since 2025 went to a multi-company group.
+> **Backtest against a naive baseline.** We replayed 151 past French IT tenders that now have an award notice. For each one the agent could only see awards published *before* the tender, and the target award was excluded. **An actual winner was in the agent's top 5 for 17 of the 151 tenders. The naive baseline (the 5 most frequent winners in the same CPV area) got 9 of the same 151, so the agent did nearly 2× better.** Both methods were scored on the same tenders, and a tender with no prediction counts as a miss. Live predictions are logged too and graded automatically when the real award is published. Honest limits: 11% is a low absolute hit rate, and a past winner is evidence, not proof of the next bidder. The last similar winner won again only 1 time in 35. The data shows why partnering matters: 199 of 2,610 French IT award notices since 2025 went to a multi-company group (TED's tendering-party-leader flag).
 
 If there's time, add a partner-finder before/after: without Radar, finding a
 co-bidder means reading award notices by hand. With it, you get a ranked list
@@ -81,7 +87,7 @@ view"). Copy the content below into a single slide:
 >
 > **Why now:** since 2023–24, TED publishes every EU notice as structured eForms with a free API, including *who bid together* and who won. LLM agents can now read the French text and act on it.
 >
-> **Proof:** in a backtest on 151 past tenders, an actual winner was in the agent's top 5 **nearly 2× as often as the naive baseline** (17 vs 9 of 151). 155 recent French IT awards went to joint bidders.
+> **Proof:** in a backtest on 151 past tenders, an actual winner was in the agent's top 5 **nearly 2× as often as the naive baseline** (17 vs 9 of 151). 199 of 2,610 recent French IT awards went to joint bidders.
 >
 > **First users:** every invite is a new user. A partner who replies gets their own Radar. Seed it from the data: every award notice names its winners, so we can reach each firm with its own matches. Channels: Numeum, CINOV, regional digital clusters.
 >
