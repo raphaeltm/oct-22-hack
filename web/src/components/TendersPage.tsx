@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { api, Match, Tender } from '../api';
+import { api, BuyerAnalytics, Match, Tender } from '../api';
 import {
   AskButton,
   DeadlineChip,
@@ -19,21 +19,28 @@ import {
 } from './ui';
 
 type Sort = 'score' | 'deadline' | 'value';
+type SearchScope = 'both' | 'name' | 'description';
 
 export function TendersPage() {
   const [params, setParams] = useSearchParams();
-  const view = params.get('view') === 'all' ? 'all' : 'matches';
-  const setView = (v: string) => setParams(v === 'all' ? { view: 'all' } : {}, { replace: true });
+  const view = params.get('view') === 'all' ? 'all' : params.get('view') === 'search' ? 'search' : 'matches';
+  const setView = (v: string) => {
+    if (v === 'all') setParams({ view: 'all' }, { replace: true });
+    else if (v === 'search') setParams({ view: 'search' }, { replace: true });
+    else setParams({}, { replace: true });
+  };
 
   return (
     <>
       <PageHeader
         eyebrow="Tenders"
-        title={view === 'all' ? 'All tenders' : 'Matched tenders'}
+        title={view === 'all' ? 'All tenders' : view === 'search' ? 'Search tenders' : 'Matched tenders'}
         subtitle={
           view === 'all'
             ? 'Search every French IT notice imported from TED, open calls and past awards.'
-            : 'Open French public tenders from TED, ranked against your company profile.'
+            : view === 'search'
+              ? 'Search by keyword and explore analytics on matching tenders.'
+              : 'Open French public tenders from TED, ranked against your company profile.'
         }
         actions={<AskButton variant="secondary" label="Which should we bid on?" prompt="Of our matched open tenders, which 2 or 3 should we bid on first, and why? Consider fit, deadline and likely competition." />}
       />
@@ -41,14 +48,313 @@ export function TendersPage() {
         <button role="tab" aria-selected={view === 'matches'} className={view === 'matches' ? 'active' : ''} onClick={() => setView('matches')}>
           Matches for you
         </button>
+        <button role="tab" aria-selected={view === 'search'} className={view === 'search' ? 'active' : ''} onClick={() => setView('search')}>
+          Keyword search
+        </button>
         <button role="tab" aria-selected={view === 'all'} className={view === 'all' ? 'active' : ''} onClick={() => setView('all')}>
           Browse all
         </button>
       </div>
-      {view === 'all' ? <AllTenders /> : <Matches />}
+      {view === 'all' ? <AllTenders /> : view === 'search' ? <KeywordSearch /> : <Matches />}
     </>
   );
 }
+
+/* ============ Issue #15: Keyword Search Landing ============ */
+
+function KeywordSearch() {
+  const [q, setQ] = useState('');
+  const [scope, setScope] = useState<SearchScope>('both');
+  const [submitted, setSubmitted] = useState(false);
+  const query = useDebounced(q.trim(), 300);
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (q.trim()) setSubmitted(true);
+  }, [q]);
+
+  if (!submitted || !query) {
+    return (
+      <div className="search-landing">
+        <div className="search-landing-inner">
+          <p className="search-landing-text">
+            Looking for your next tender/RFP/contract or subcontract? Type the keyword &amp; we give you a full list of current openings with helpful analytics on top
+          </p>
+          <form className="search-landing-form" onSubmit={handleSubmit}>
+            <label className="search search-lg">
+              <Icon name="search" size={20} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder='Search in French, e.g. « logiciel » or « site internet »'
+                autoFocus
+              />
+            </label>
+            <div className="scope-filter">
+              <span className="scope-label">Search in:</span>
+              <div className="segmented" role="group" aria-label="Search scope">
+                {(['both', 'name', 'description'] as SearchScope[]).map((s) => (
+                  <button type="button" key={s} className={scope === s ? 'active' : ''} onClick={() => setScope(s)}>
+                    {s === 'both' ? 'Name & Description' : s === 'name' ? 'Name only' : 'Description only'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button type="submit" className="btn primary" disabled={!q.trim()}>
+              Search tenders
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SearchResults
+      query={query}
+      scope={scope}
+      onBack={() => { setSubmitted(false); }}
+      onQueryChange={setQ}
+      onScopeChange={setScope}
+      q={q}
+    />
+  );
+}
+
+/* ============ Issue #17: Analytics Search Results ============ */
+
+type FilterMode = 'none' | 'concentration' | 'openCount' | 'pastCount';
+
+function SearchResults({
+  query, scope, onBack, onQueryChange, onScopeChange, q,
+}: {
+  query: string; scope: SearchScope; onBack: () => void;
+  onQueryChange: (v: string) => void; onScopeChange: (v: SearchScope) => void; q: string;
+}) {
+  const { data, loading, error } = useApi(
+    () => api.tenders({ q: query, scope, limit: 50 }),
+    [query, scope],
+  );
+  const { data: analyticsData } = useApi(() => api.buyerAnalytics(), []);
+
+  const [filterMode, setFilterMode] = useState<FilterMode>('none');
+  const [concentrationMin, setConcentrationMin] = useState(0);
+  const [openCountMin, setOpenCountMin] = useState(0);
+  const [pastCountMin, setPastCountMin] = useState(0);
+
+  const buyerMap = useMemo(() => {
+    const map = new Map<string, BuyerAnalytics>();
+    if (!analyticsData) return map;
+    for (const b of analyticsData.buyers) {
+      map.set(b.buyerKey, b);
+    }
+    return map;
+  }, [analyticsData]);
+
+  const getBuyerStats = useCallback((buyerName: string | null): BuyerAnalytics | undefined => {
+    if (!buyerName) return undefined;
+    return buyerMap.get(buyerName.toLowerCase().trim());
+  }, [buyerMap]);
+
+  const filteredTenders = useMemo(() => {
+    if (!data) return [];
+    return data.tenders.filter((t) => {
+      const stats = getBuyerStats(t.buyerName);
+      if (filterMode === 'concentration' && stats) {
+        return stats.winnerConcentration >= concentrationMin;
+      }
+      if (filterMode === 'openCount' && stats) {
+        return stats.openTenders >= openCountMin;
+      }
+      if (filterMode === 'pastCount' && stats) {
+        return stats.pastAwards >= pastCountMin;
+      }
+      return true;
+    });
+  }, [data, filterMode, concentrationMin, openCountMin, pastCountMin, getBuyerStats]);
+
+  return (
+    <>
+      <div className="toolbar">
+        <button className="btn ghost small" onClick={onBack}>
+          ← New search
+        </button>
+        <label className="search">
+          <Icon name="search" size={16} />
+          <input value={q} onChange={(e) => onQueryChange(e.target.value)} placeholder="Refine search…" />
+        </label>
+        <div className="segmented" role="group" aria-label="Search scope">
+          {(['both', 'name', 'description'] as SearchScope[]).map((s) => (
+            <button key={s} className={scope === s ? 'active' : ''} onClick={() => onScopeChange(s)}>
+              {s === 'both' ? 'Both' : s === 'name' ? 'Name' : 'Desc.'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {data && (
+        <p className="muted small">
+          {data.total.toLocaleString('en-GB')} result{data.total === 1 ? '' : 's'}
+          {filteredTenders.length < data.tenders.length && ` (${filteredTenders.length} after filter)`}
+          {loading && ' · updating…'}
+        </p>
+      )}
+
+      <div className="filter-bar">
+        <span className="filter-label">Filter by:</span>
+        <div className="segmented" role="group" aria-label="Filter mode">
+          <button className={filterMode === 'none' ? 'active' : ''} onClick={() => setFilterMode('none')}>
+            None
+          </button>
+          <button className={filterMode === 'concentration' ? 'active' : ''} onClick={() => setFilterMode('concentration')}>
+            Winner concentration
+          </button>
+          <button className={filterMode === 'openCount' ? 'active' : ''} onClick={() => setFilterMode('openCount')}>
+            Open tenders
+          </button>
+          <button className={filterMode === 'pastCount' ? 'active' : ''} onClick={() => setFilterMode('pastCount')}>
+            Past awards
+          </button>
+        </div>
+      </div>
+
+      {filterMode === 'concentration' && (
+        <div className="filter-control">
+          <label>
+            Min. winner concentration: <strong>{concentrationMin}%</strong>
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={concentrationMin}
+            onChange={(e) => setConcentrationMin(Number(e.target.value))}
+            className="slider"
+          />
+          <span className="filter-hint">
+            Shows tenders where one contractor won at least {concentrationMin}% of the buyer's past awards
+          </span>
+        </div>
+      )}
+
+      {filterMode === 'openCount' && (
+        <div className="filter-control">
+          <label>
+            Min. open tenders by buyer: <strong>{openCountMin}</strong>
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={openCountMin}
+            onChange={(e) => setOpenCountMin(Math.max(0, Number(e.target.value)))}
+            className="filter-input"
+          />
+        </div>
+      )}
+
+      {filterMode === 'pastCount' && (
+        <div className="filter-control">
+          <label>
+            Min. past awards by buyer: <strong>{pastCountMin}</strong>
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={pastCountMin}
+            onChange={(e) => setPastCountMin(Math.max(0, Number(e.target.value)))}
+            className="filter-input"
+          />
+        </div>
+      )}
+
+      {loading && !data && <Loading label="Searching tenders…" />}
+      {error && <ErrorState message={error} />}
+      {data && filteredTenders.length === 0 && <Empty>No tenders match your search. Try fewer words or adjust filters.</Empty>}
+
+      <ul className="tender-list search-results">
+        {filteredTenders.map((t) => (
+          <SearchResultCard
+            key={t.id}
+            tender={t}
+            keywordCount={t.keywordCount ?? 0}
+            buyerStats={getBuyerStats(t.buyerName)}
+          />
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function SearchResultCard({
+  tender,
+  keywordCount,
+  buyerStats,
+}: {
+  tender: Tender & { keywordCount?: number };
+  keywordCount: number;
+  buyerStats?: BuyerAnalytics;
+}) {
+  const isAward = tender.noticeType.startsWith('can');
+  return (
+    <li className="card search-card">
+      <div className="search-card-body">
+        <div className="tender-meta">
+          <span className="buyer"><Icon name="building" size={14} /> {tender.buyerName ?? 'Unknown buyer'}</span>
+          <span className="dot">·</span>
+          <span className="mono">{tender.publicationNumber}</span>
+        </div>
+        <Link to={`/tenders/${tender.id}`} className="search-card-title" lang="fr">
+          {tender.title}
+        </Link>
+
+        <div className="search-card-analytics">
+          {keywordCount > 0 && (
+            <span className="chip analytics-chip">
+              <Icon name="search" size={12} /> {keywordCount} keyword match{keywordCount !== 1 ? 'es' : ''} in description
+            </span>
+          )}
+          {buyerStats && buyerStats.winnerConcentration > 0 && (
+            <span className="chip analytics-chip concentration" title="Percentage of this buyer's past awards going to a single contractor">
+              <Icon name="trophy" size={12} /> {buyerStats.winnerConcentration}% awards to same contractor
+            </span>
+          )}
+          {buyerStats && (
+            <span className="chip analytics-chip" title="Currently open tenders from this buyer">
+              {buyerStats.openTenders} open
+            </span>
+          )}
+          {buyerStats && (
+            <span className="chip analytics-chip" title="Total past awards from this buyer">
+              {buyerStats.pastAwards} past awards
+            </span>
+          )}
+        </div>
+
+        <div className="tender-foot">
+          {isAward ? (
+            <span className="chip award">
+              <Icon name="trophy" size={13} /> Awarded{tender.awardCount ? ` · ${tender.awardCount} winner${tender.awardCount > 1 ? 's' : ''}` : ''}
+            </span>
+          ) : (
+            <DeadlineChip deadline={tender.deadline} />
+          )}
+          {tender.estimatedValue != null && <span className="chip value">{formatEur(tender.estimatedValue)}</span>}
+          <span className="spacer" />
+          {tender.url && (
+            <a className="link-ext" href={tender.url} target="_blank" rel="noreferrer">
+              TED <Icon name="external" size={13} />
+            </a>
+          )}
+          <Link to={`/tenders/${tender.id}`} className="btn ghost small">
+            {isAward ? 'Details →' : 'Competitor brief →'}
+          </Link>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/* ============ Original Matches Tab ============ */
 
 function Matches() {
   const { data, mock, loading, error, reload } = useApi(() => api.matches(), []);
@@ -126,7 +432,7 @@ function Matches() {
 
       {loading && !data && <Loading label="Loading matches…" />}
       {error && <ErrorState message={error} />}
-      {data && rows.length === 0 && <Empty>No tenders match “{q}”.</Empty>}
+      {data && rows.length === 0 && <Empty>No tenders match "{q}".</Empty>}
 
       <ul className="tender-list">
         {rows.map((m) => (
@@ -170,6 +476,8 @@ function TenderCard({ match: { tender, score, rationale, status } }: { match: Ma
     </li>
   );
 }
+
+/* ============ Original Browse All Tab ============ */
 
 function AllTenders() {
   const [q, setQ] = useState('');
