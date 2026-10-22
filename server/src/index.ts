@@ -89,7 +89,7 @@ app.get('/api/companies/:id/stats', async (c) => {
               count(*) filter (where m.verdict = 'go')::int as go,
               count(*) filter (where m.verdict = 'maybe')::int as maybe,
               count(*) filter (where m.decision is not null)::int as decided,
-              coalesce(sum(t.estimated_value) filter (where m.verdict in ('go','maybe') and m.scored_by <> 'quick'), 0)::float as pipeline,
+              coalesce(sum(t.estimated_value) filter (where m.verdict in ('go','maybe') and m.scored_by <> 'quick' and coalesce(m.decision, 'go') = 'go'), 0)::float as pipeline,
               min(t.deadline) filter (where m.verdict = 'go' and t.deadline > now()) as next_deadline
          from tender_matches m join tenders t on t.id = m.tender_id
         where m.company_id = $1 and (t.deadline is null or t.deadline > now())`,

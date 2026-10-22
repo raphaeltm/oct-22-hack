@@ -6,6 +6,8 @@ services:
       DATABASE_URL: postgres://app:${POSTGRES_PASSWORD:-app}@db:5432/app
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MODEL: ${MODEL:-anthropic/claude-sonnet-5}
+      SCORING_MODEL: ${SCORING_MODEL:-anthropic/claude-haiku-5-5}
+      SCAN_EVERY_MIN: ${SCAN_EVERY_MIN:-30}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
       db:
