@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { runMigrations } from './db';
 import { publish, redis, subscribe } from './events';
 import { mastra, memory } from './mastra';
 
@@ -92,6 +93,8 @@ app.get('/api/threads/:threadId/events', (c) => {
 // Serve the built frontend in production.
 app.use('/*', serveStatic({ root: './public' }));
 app.get('*', serveStatic({ path: './public/index.html' }));
+
+await runMigrations();
 
 const port = Number(process.env.PORT ?? 3000);
 serve({ fetch: app.fetch, port }, () => console.log(`server listening on :${port}`));
