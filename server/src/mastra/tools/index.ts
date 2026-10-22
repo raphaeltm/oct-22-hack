@@ -1,5 +1,6 @@
 // All agent tools. To add tools, create tools/<name>.ts exporting e.g.
 // `export const tenderTools = { searchTenders, getTender }` and spread it here.
+import { autopilotTools } from './autopilot';
 import { companyTools } from './company';
 import { competitorTools } from './competitors';
 import { researchTools } from './research';
@@ -10,4 +11,5 @@ export const tools = {
   ...researchTools,
   ...tenderTools,
   ...competitorTools,
+  ...autopilotTools,
 };

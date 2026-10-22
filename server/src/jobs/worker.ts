@@ -1,7 +1,16 @@
 import { Worker, type Job } from 'bullmq';
+import { eq } from 'drizzle-orm';
+import { db, pool } from '../db';
+import { companies } from '../db/schema';
+import { invalidateAwardIndex } from '../lib/competitors';
+import { buildDossier } from '../lib/dossier';
+import { gradePredictions, runBacktest } from '../lib/learning';
+import { refreshMatches } from '../lib/matching';
 import { researchOrganisation, type ResearchResult } from '../lib/research';
 import {
   bullConnection,
+  enqueueAutopilot,
+  type AutopilotJobData,
   publishJobEvent,
   QUEUE_NAMES,
   QUEUE_PREFIX,
@@ -32,7 +41,56 @@ async function processTedImport(job: Job<TedImportJobData>) {
       void reportProgress(job, { current: n, total: job.data.limit ?? 0, message: `Imported ${n} notices` });
     },
   });
-  return result;
+  invalidateAwardIndex();
+  // New award notices may resolve earlier predictions; new tenders may match companies.
+  const graded = await gradePredictions();
+  await enqueueAutopilot({ kind: 'sweep' });
+  await enqueueAutopilot({ kind: 'backtest' });
+  return { ...result, graded: graded.graded };
+}
+
+async function processAutopilot(job: Job<AutopilotJobData>) {
+  const data = job.data;
+  if (data.kind === 'dossier') {
+    const [company] = await db.select().from(companies).where(eq(companies.id, data.companyId)).limit(1);
+    if (!company) return { skipped: 'company deleted' };
+    await pool.query(
+      `UPDATE prebid_dossiers SET status = 'running', error = NULL, updated_at = now() WHERE company_id = $1 AND tender_id = $2`,
+      [data.companyId, data.tenderId],
+    );
+    await reportProgress(job, { current: 0, total: 1, message: 'Reading the notice, buyer history and likely bidders' });
+    try {
+      const dossier = await buildDossier(company, data.tenderId);
+      await pool.query(
+        `UPDATE prebid_dossiers SET status = 'ready', content = $3, error = NULL, updated_at = now() WHERE company_id = $1 AND tender_id = $2`,
+        [data.companyId, data.tenderId, dossier],
+      );
+      return { tenderId: data.tenderId, verdict: dossier.recommendation.verdict };
+    } catch (err) {
+      await pool.query(
+        `UPDATE prebid_dossiers SET status = 'failed', error = $3, updated_at = now() WHERE company_id = $1 AND tender_id = $2`,
+        [data.companyId, data.tenderId, (err as Error).message.slice(0, 500)],
+      );
+      throw err;
+    }
+  }
+  if (data.kind === 'sweep') {
+    const { rows } = await pool.query<{ user_id: string }>(`SELECT user_id FROM companies WHERE user_id IS NOT NULL`);
+    let queued = 0;
+    for (const [i, r] of rows.entries()) {
+      await reportProgress(job, { current: i, total: rows.length, message: `Matching new tenders for company ${i + 1}/${rows.length}` });
+      const res = await refreshMatches(r.user_id, { limit: 25 }).catch((err) => {
+        console.error('[autopilot] sweep failed for a company', err);
+        return null;
+      });
+      queued += res?.autopilot.length ?? 0;
+    }
+    return { companies: rows.length, dossiersQueued: queued };
+  }
+  return runBacktest({
+    limit: data.limit,
+    onProgress: (done, total) => void reportProgress(job, { current: done, total, message: `Backtesting ${done}/${total} past tenders` }),
+  });
 }
 
 async function processResearch(job: Job<ResearchJobData>) {
@@ -80,7 +138,20 @@ export async function startWorkers() {
       }),
       'research',
     ),
+    wire(
+      new Worker<AutopilotJobData>(QUEUE_NAMES.autopilot, processAutopilot, {
+        connection: bullConnection(),
+        prefix: QUEUE_PREFIX,
+        concurrency: 2,
+      }),
+      'autopilot',
+    ),
   ];
+  // First boot: build the prediction scorecard once there is data to replay.
+  const { rows } = await pool.query(`SELECT 1 FROM predictions WHERE source = 'backtest' LIMIT 1`).catch(() => ({ rows: [1] }));
+  if (!rows.length) {
+    await enqueueAutopilot({ kind: 'backtest' }).catch((err) => console.error('[jobs] failed to queue backtest', err));
+  }
   if (process.env.TED_IMPORT_SCHEDULE !== '0') {
     await scheduleTedImport().catch((err) => console.error('[jobs] failed to schedule ted-import', err));
   }

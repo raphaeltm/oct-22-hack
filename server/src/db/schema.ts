@@ -10,6 +10,7 @@ import {
   real,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -56,6 +57,8 @@ export const tenders = pgTable(
     deadline: timestamp('deadline', { withTimezone: true }),
     publicationDate: timestamp('publication_date', { withTimezone: true }),
     url: text('url'),
+    // eForms procedure identifier (BT-04): shared by a tender and its award notice.
+    procedureId: text('procedure_id'),
     raw: jsonb('raw'),
     search: tsvector('search').generatedAlwaysAs(
       sql`setweight(to_tsvector('french', coalesce(title, '')), 'A') || setweight(to_tsvector('french', coalesce(buyer_name, '')), 'B') || setweight(to_tsvector('french', coalesce(description, '')), 'C')`,
@@ -67,6 +70,7 @@ export const tenders = pgTable(
     index('tenders_cpv_idx').using('gin', t.cpvCodes),
     index('tenders_type_deadline_idx').on(t.noticeType, t.deadline),
     index('tenders_buyer_idx').on(t.buyerName),
+    index('tenders_procedure_idx').on(t.procedureId),
   ],
 );
 
@@ -124,7 +128,69 @@ export const tenderMatches = pgTable(
     tenderId: uuid('tender_id').notNull().references(() => tenders.id, { onDelete: 'cascade' }),
     score: real('score').notNull(),
     rationale: text('rationale'),
+    signals: jsonb('signals').$type<Record<string, unknown>>(),
     createdAt: timestamps.createdAt,
+  },
+  (t) => [primaryKey({ columns: [t.companyId, t.tenderId] })],
+);
+
+// ---------- Autopilot (issue #19) ----------
+
+// Pre-bid dossier the agent builds on its own when a tender matches a company.
+export const prebidDossiers = pgTable(
+  'prebid_dossiers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    tenderId: uuid('tender_id').notNull().references(() => tenders.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('queued'), // queued | running | ready | failed
+    trigger: text('trigger').notNull().default('autopilot'), // autopilot | manual
+    score: real('score'),
+    content: jsonb('content').$type<Record<string, unknown>>(),
+    error: text('error'),
+    seenAt: timestamp('seen_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('prebid_dossiers_company_tender_idx').on(t.companyId, t.tenderId)],
+);
+
+// What the agent predicted for a tender (likely bidders, possible incumbent),
+// graded later against the award notice (same procedure id).
+export const predictions = pgTable(
+  'predictions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+    tenderId: uuid('tender_id').notNull().references(() => tenders.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(), // competitor | incumbent
+    source: text('source').notNull().default('live'), // live | backtest
+    organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    aliasKey: text('alias_key').notNull(),
+    rank: integer('rank').notNull(),
+    outcome: text('outcome').notNull().default('pending'), // pending | hit | miss
+    awardTenderId: uuid('award_tender_id').references(() => tenders.id, { onDelete: 'set null' }),
+    gradedAt: timestamp('graded_at', { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [
+    index('predictions_tender_idx').on(t.tenderId),
+    index('predictions_outcome_idx').on(t.source, t.outcome),
+  ],
+);
+
+// Bid / skip / won / lost decisions with a reason; the match scorer learns from these.
+export const tenderFeedback = pgTable(
+  'tender_feedback',
+  {
+    companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    tenderId: uuid('tender_id').notNull().references(() => tenders.id, { onDelete: 'cascade' }),
+    decision: text('decision').notNull(), // bid | skip | won | lost
+    reason: text('reason'), // scope | too_large | too_small | buyer | region | deadline | incumbent | other
+    note: text('note'),
+    // Snapshot of the match signals when the decision was made.
+    signals: jsonb('signals').$type<Record<string, unknown>>(),
+    ...timestamps,
   },
   (t) => [primaryKey({ columns: [t.companyId, t.tenderId] })],
 );

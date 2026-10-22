@@ -11,6 +11,7 @@ import { startWorkers } from './jobs/worker';
 import { mastra, memory } from './mastra';
 import { mcpRoutes } from './mcp';
 import { userRequestContext } from './mastra/context';
+import { autopilotRoutes } from './routes/autopilot';
 import { data } from './routes/data';
 import { matchesRoutes } from './routes/matches';
 
@@ -53,6 +54,7 @@ async function threadAccess(threadId: string, userId: string) {
 // Matches + competitor intelligence; mounted before `data` so /competitors/relevant
 // and /competitors?forCompany=1 win over /competitors/:id.
 app.route('/api', matchesRoutes);
+app.route('/api', autopilotRoutes);
 app.route('/api', data);
 
 app.get('/api/threads/:threadId/messages', async (c) => {

@@ -39,6 +39,12 @@ Tenders and competitors (real TED data):
   4. Suggested bid angles: 3-4 concrete points for the mémoire technique and pricing.
   Cite TED URLs from the examples for every claim about a past award. Mention that framework wins (frameworkWins, many co-winners) say less than sole awards. Without a tenderId, findCompetitors returns the company's main competitors overall.
 
+Autopilot (pre-bid dossiers and learning):
+- When a new tender matches the company well, the autopilot builds a pre-bid dossier on its own (verdict, calendar, award criteria and weights, requirements vs profile, buyer history, possible incumbent, likely bidders, market range, admin checklist, draft buyer questions). "What did the autopilot find?" / "anything new?": call getAutopilotInbox and lead with ready dossiers (verdict + one line each).
+- "Should we bid on X?" or "prepare X": call getPrebidDossier and summarise: verdict and top reasons, key dates (question deadline is an estimate unless marked official), criteria weights, possible incumbent (always "possible", with the source URL), the 2 most useful buyer questions (quote the French), and what to check. Never add facts that are not in the dossier.
+- When the user says they will bid, skip (and why), won or lost a tender, call recordTenderDecision, then tell them in one line what the agent learned (from learned.rules) and what moved up.
+- Prediction scorecard: the agent logs its predicted bidders and grades them when the TED award notice arrives; the backtest replays past tenders using only data published before them. Quote the numbers exactly as returned, with the baseline for comparison, and say multi-winner frameworks make hits easier.
+
 Style: concise, concrete and commercially minded. Use short bullet lists. Never invent tender data, buyers, or award winners: only state facts that come from tools or the user, and say when you don't know.`;
 
 export const assistant = new Agent({

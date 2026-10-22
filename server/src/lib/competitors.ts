@@ -256,8 +256,11 @@ const NOTES = [
   'Award values are often missing on multi-winner frameworks; totalValue only sums known values.',
 ];
 
-/** Likely bidders for one tender: past winners with the same buyer and/or overlapping CPV codes. */
-export async function competitorsForTender(tenderIdOrPub: string, limit = 10) {
+/**
+ * Likely bidders for one tender: past winners with the same buyer and/or overlapping CPV codes.
+ * `asOf` (YYYY-MM-DD) only uses award notices dated before it (backtesting).
+ */
+export async function competitorsForTender(tenderIdOrPub: string, limit = 10, opts: { asOf?: string } = {}) {
   const uuid = /^[0-9a-f-]{36}$/i.test(tenderIdOrPub);
   const { rows } = await pool.query<{
     id: string; publication_number: string; notice_type: string; title: string; description: string | null;
@@ -270,7 +273,9 @@ export async function competitorsForTender(tenderIdOrPub: string, limit = 10) {
   );
   const t = rows[0];
   if (!t) return null;
-  const { notices, orgs } = await awardIndex();
+  const index = await awardIndex();
+  const { orgs } = index;
+  const notices = opts.asOf ? index.notices.filter((n) => n.date && n.date < opts.asOf!) : index.notices;
   const lexemes = await distinctiveLexemes(`${t.title} ${t.title} ${(t.description ?? '').slice(0, 600)}`);
   const text = await textSimilarity(lexemes, 'lexeme', `t.notice_type = 'can-standard'`, { minMatched: 2, saturate: 4 });
   const bk = buyerKey(t.buyer_name);
@@ -409,5 +414,44 @@ export async function competitorProfile(organisationId: string, companyId?: stri
       };
     }),
     researchNotes: notes.rows,
+  };
+}
+
+// Generic procurement words that say nothing about what is being bought.
+const TITLE_STOP = new Set(
+  'marche marches public publics prestation prestations service services accord cadre accords relatif relative relatifs ' +
+    'realisation fourniture fournitures mise place dans cadre pour lot lots ville commune departement region metropole ' +
+    'agglomeration communaute direction besoins ensemble associes associees concernant annee annees conseil generale general'
+    .split(' '),
+);
+const titleTokens = (s: string) => new Set(fold(s).split(' ').filter((w) => w.length >= 5 && !TITLE_STOP.has(w)));
+
+/**
+ * Possible incumbent: the buyer's most recent earlier award for the same kind of
+ * work (class-level CPV match, or 2+ distinctive title words in common). Evidence,
+ * not proof: buyers re-scope contracts and frameworks have several holders.
+ */
+export async function findIncumbent(
+  t: { id: string; title: string; buyerName: string | null; cpvCodes: string[] },
+  opts: { asOf?: string } = {},
+) {
+  const { notices } = await awardIndex();
+  const bk = buyerKey(t.buyerName);
+  if (!bk) return null;
+  const mine = titleTokens(t.title);
+  const candidates = notices
+    .filter((n) => n.buyerKey === bk && n.id !== t.id && n.winners.length && (!opts.asOf || (n.date && n.date < opts.asOf)))
+    .map((n) => {
+      const shared = [...titleTokens(n.title)].filter((w) => mine.has(w));
+      return { n, shared, cpv: cpvSim(t.cpvCodes, n.cpvCodes).strong };
+    })
+    .filter((c) => c.cpv >= 0.8 || c.shared.length >= 2)
+    .sort((a, b) => (b.n.date ?? '').localeCompare(a.n.date ?? ''));
+  const best = candidates[0];
+  if (!best) return null;
+  return {
+    notice: best.n,
+    winners: best.n.winners,
+    basis: best.shared.length >= 2 ? `shared terms: ${best.shared.slice(0, 4).join(', ')}` : 'same CPV class',
   };
 }
