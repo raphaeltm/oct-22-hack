@@ -225,7 +225,16 @@ export type AutopilotInbox = {
 
 export type Result<T> = { data: T; mock: boolean };
 
-export type TenderSearch = { total: number; tenders: Tender[] };
+export type TenderSearch = { total: number; tenders: (Tender & { keywordCount?: number })[] };
+
+export type BuyerAnalytics = {
+  buyerKey: string;
+  buyerName: string;
+  openTenders: number;
+  pastAwards: number;
+  totalNotices: number;
+  winnerConcentration: number;
+};
 
 class HttpError extends Error {
   constructor(public status: number) {
@@ -373,23 +382,31 @@ export const api = {
       null,
     ),
 
-  tenders: (params: { q?: string; cpv?: string; open?: boolean; type?: string; limit?: number; offset?: number } = {}) => {
+  tenders: (params: { q?: string; cpv?: string; open?: boolean; type?: string; scope?: 'name' | 'description' | 'both'; limit?: number; offset?: number } = {}) => {
     const qs = new URLSearchParams();
     if (params.q) qs.set('q', params.q);
     if (params.cpv) qs.set('cpv', params.cpv);
     if (params.open) qs.set('open', '1');
     if (params.type) qs.set('type', params.type);
+    if (params.scope && params.scope !== 'both') qs.set('scope', params.scope);
     if (params.limit) qs.set('limit', String(params.limit));
     if (params.offset) qs.set('offset', String(params.offset));
     return withFallback<TenderSearch>(
       `/api/tenders?${qs}`,
       (r) => {
-        const tenders = arr<any>(r.tenders ?? r).map((t) => ({ ...remember(toTender(t)), awardCount: t.awardCount }));
+        const tenders = arr<any>(r.tenders ?? r).map((t) => ({ ...remember(toTender(t)), awardCount: t.awardCount, keywordCount: t.keywordCount ?? 0 }));
         return { total: Number(r.total ?? tenders.length), tenders };
       },
       null,
     );
   },
+
+  buyerAnalytics: () =>
+    withFallback<{ buyers: BuyerAnalytics[] }>(
+      '/api/tenders/buyer-analytics',
+      (r) => ({ buyers: arr<BuyerAnalytics>(r.buyers) }),
+      null,
+    ),
 
   tender: (id: string) =>
     withFallback<{ tender: Tender; awards: Award[] }>(
