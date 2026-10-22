@@ -560,3 +560,13 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); tex
   .bar-row.score-part .bar-note { grid-column: 1 / -1; }
   .invite-head { flex-wrap: wrap; }
 }
+
+/* Joint bidding emphasis (BidTogether.tsx, TendersPage TeamingChip) */
+.chip.together { background: var(--accent-soft, #eef2fc); color: var(--accent); border-color: #c9d8c0; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.match-card .chip.together { margin-top: 8px; }
+.together-shortlist { margin-top: 32px; }
+.page-head + .together-shortlist { margin-top: 0; }
+.together-shortlist .tender-list { margin-bottom: 12px; }
+@media (max-width: 640px) {
+  .section-head { flex-wrap: wrap; }
+}

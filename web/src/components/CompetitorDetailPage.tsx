@@ -70,9 +70,9 @@ export function CompetitorDetailPage() {
 
   return (
     <>
-      <Link to="/competitors" className="back"><Icon name="back" size={16} /> All competitors</Link>
+      <Link to="/competitors" className="back"><Icon name="back" size={16} /> Market</Link>
       <PageHeader
-        eyebrow="Competitor"
+        eyebrow="Rival or partner"
         title={
           <span className="title-with-avatar">
             <Initials name={data.name} size={44} /> {data.name}
@@ -94,7 +94,8 @@ export function CompetitorDetailPage() {
               {running ? progressText : data.lastResearchedAt ? 'Refresh research' : 'Research this competitor'}
             </button>
             <AskButton
-              prompt={`Tell me about competitor ${data.name}: which public contracts have they won, who are their main buyers, and how could Rivage Numérique compete against them?`}
+              label="Partner or rival?"
+              prompt={`Tell me about ${data.name}: which public contracts have they won, with which buyers, and have they bid in groupements before? Would they complement Rivage Numérique as a groupement partner, or are they a direct rival? Cite their TED awards.`}
             />
           </>
         }

@@ -6,11 +6,12 @@ import { useChat } from './ChatContext';
 import { ChatPanel } from './ChatPanel';
 import { Icon, Initials, useApi } from './ui';
 
+// Joint bidding first: find tenders to bid together, then the partners to bid with.
 const NAV = [
+  { to: '/partners', label: 'Bid together', icon: 'handshake' },
+  { to: '/tenders', label: 'Opportunities', icon: 'tenders' },
+  { to: '/competitors', label: 'Market', icon: 'competitors' },
   { to: '/autopilot', label: 'Autopilot', icon: 'spark' },
-  { to: '/tenders', label: 'Tenders', icon: 'tenders' },
-  { to: '/competitors', label: 'Competitors', icon: 'competitors' },
-  { to: '/partners', label: 'Partners', icon: 'handshake' },
   { to: '/company', label: 'Company', icon: 'company' },
 ];
 
@@ -57,7 +58,7 @@ function Sidebar() {
 
   return (
     <nav className="sidebar">
-      <NavLink to="/tenders" className="brand" aria-label="Radar home">
+      <NavLink to="/partners" className="brand" aria-label="Radar home">
         <span className="brand-icon">◈</span>
         <span className="brand-name">radar<span className="brand-dot">.</span></span>
       </NavLink>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { api, Match, Tender } from '../api';
+import { api, Match, needsPartner, Teaming, Tender } from '../api';
 import {
   AskButton,
   DeadlineChip,
@@ -26,18 +26,20 @@ export function TendersPage() {
   const [params, setParams] = useSearchParams();
   const view = params.get('view') === 'all' ? 'all' : 'matches';
   const setView = (v: string) => setParams(v === 'all' ? { view: 'all' } : {}, { replace: true });
+  const together = params.get('together') === '1';
+  const setTogether = (on: boolean) => setParams(on ? { together: '1' } : {}, { replace: true });
 
   return (
     <>
       <PageHeader
-        eyebrow="Tenders"
+        eyebrow="Opportunities"
         title={view === 'all' ? 'All tenders' : 'Matched tenders'}
         subtitle={
           view === 'all'
             ? 'Search every French IT notice imported from TED, open calls and past awards.'
-            : 'Open French public tenders from TED, ranked against your company profile.'
+            : 'Open French public tenders from TED, ranked against your company profile. Too big or too broad to bid alone? Bid as a groupement.'
         }
-        actions={<AskButton variant="secondary" label="Which should we bid on?" prompt="Of our matched open tenders, which 2 or 3 should we bid on first, and why? Consider fit, deadline and likely competition." />}
+        actions={<AskButton variant="secondary" label="Which should we bid on?" prompt="Of our matched open tenders, which 2 or 3 should we bid on first, and why? Consider fit, deadline, likely competition, and whether we should bid as a groupement with a partner." />}
       />
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={view === 'matches'} className={view === 'matches' ? 'active' : ''} onClick={() => setView('matches')}>
@@ -47,12 +49,12 @@ export function TendersPage() {
           Browse all
         </button>
       </div>
-      {view === 'all' ? <AllTenders /> : <Matches />}
+      {view === 'all' ? <AllTenders /> : <Matches together={together} setTogether={setTogether} />}
     </>
   );
 }
 
-function Matches() {
+function Matches({ together, setTogether }: { together: boolean; setTogether: (on: boolean) => void }) {
   const { data, mock, loading, error, reload } = useApi(() => api.matches(), []);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
@@ -75,7 +77,9 @@ function Matches() {
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = (data ?? []).filter(
-      (m) => !needle || `${m.tender.title} ${m.tender.buyerName ?? ''} ${m.tender.publicationNumber}`.toLowerCase().includes(needle),
+      (m) =>
+        (!together || needsPartner(m.teaming)) &&
+        (!needle || `${m.tender.title} ${m.tender.buyerName ?? ''} ${m.tender.publicationNumber}`.toLowerCase().includes(needle)),
     );
     const key: Record<Sort, (m: Match) => number> = {
       score: (m) => -m.score,
@@ -84,10 +88,10 @@ function Matches() {
       value: (m) => -(m.tender.estimatedValue ?? 0),
     };
     return [...list].sort((a, b) => key[sort](a) - key[sort](b));
-  }, [data, q, sort]);
+  }, [data, q, sort, together]);
 
   const strong = data?.filter((m) => m.score >= 60).length ?? 0;
-  const pipeline = data?.reduce((s, m) => s + (m.tender.estimatedValue ?? 0), 0) ?? 0;
+  const teamUp = data?.filter((m) => needsPartner(m.teaming)).length ?? 0;
   const closingSoon = data?.filter((m) => {
     const d = daysUntil(m.tender.deadline);
     return d != null && d >= 0 && d <= 14;
@@ -105,7 +109,7 @@ function Matches() {
         <div className="stats">
           <Stat label="Matched tenders" value={data.length} />
           <Stat label="Strong fit" value={strong} hint="score ≥ 60" />
-          <Stat label="Pipeline value" value={formatEur(pipeline, true)} hint="estimated" />
+          <Stat label="Bid together" value={teamUp} hint="capability gap or large for you" />
           <Stat label="Closing in 14 days" value={closingSoon} />
         </div>
       )}
@@ -125,6 +129,9 @@ function Matches() {
           </button>
           <button className={sort === 'value' ? 'active' : ''} onClick={() => setSort('value')}>Value</button>
         </div>
+        <label className="toggle">
+          <input type="checkbox" checked={together} onChange={(e) => setTogether(e.target.checked)} /> Bid together only
+        </label>
         <button className="btn secondary small" onClick={refresh} disabled={refreshing}>
           {refreshing ? 'Refreshing…' : 'Refresh matches'}
         </button>
@@ -132,7 +139,9 @@ function Matches() {
 
       {loading && !data && <Loading label="Loading matches…" />}
       {error && <ErrorState message={error} />}
-      {data && rows.length === 0 && <Empty>No tenders match “{q}”.</Empty>}
+      {data && rows.length === 0 && (
+        <Empty>{together && !q ? 'None of your matches needs a partner right now.' : `No tenders match “${q}”.`}</Empty>
+      )}
 
       <ul className="tender-list">
         {rows.map((m) => (
@@ -143,7 +152,23 @@ function Matches() {
   );
 }
 
-function TenderCard({ match: { tender, score, rationale, status } }: { match: Match }) {
+export function TeamingChip({ teaming }: { teaming: Teaming | null }) {
+  if (!teaming || !needsPartner(teaming)) return null;
+  const { gaps, large } = teaming;
+  const title = [
+    gaps.length ? `Asks for capabilities your profile doesn't cover: ${gaps.join(', ')}` : '',
+    large ? 'Large for your company size' : '',
+  ].filter(Boolean).join('. ');
+  const label = gaps.length ? `needs ${gaps[0]}${gaps.length > 1 ? ` +${gaps.length - 1}` : ''}` : 'large for you alone';
+  return (
+    <span className="chip together" title={title}>
+      <Icon name="handshake" size={13} /> Bid together · {label}
+    </span>
+  );
+}
+
+export function TenderCard({ match: { tender, score, rationale, status, teaming } }: { match: Match }) {
+  const team = needsPartner(teaming);
   return (
     <li className="card tender-card">
       <ScoreRing score={score} />
@@ -158,6 +183,7 @@ function TenderCard({ match: { tender, score, rationale, status } }: { match: Ma
         </Link>
         {rationale && <p className="rationale">{rationale}</p>}
         <div className="tender-foot">
+          <TeamingChip teaming={teaming} />
           <DeadlineChip deadline={tender.deadline} />
           {status === 'recent' && <span className="chip muted" title="Recently published; deadline passed or not stated">Recent</span>}
           <ReadTimeChip chars={tenderTextLength(tender.title, tender.description)} />
@@ -170,7 +196,7 @@ function TenderCard({ match: { tender, score, rationale, status } }: { match: Ma
             </a>
           )}
           <Link to={`/tenders/${tender.id}`} className="btn ghost small">
-            Competitor brief →
+            {team ? 'Find partners →' : 'Partners & rivals →'}
           </Link>
         </div>
       </div>
@@ -268,7 +294,7 @@ function TenderRow({ tender }: { tender: Tender }) {
             </a>
           )}
           <Link to={`/tenders/${tender.id}`} className="btn ghost small">
-            {isAward ? 'Details →' : 'Competitor brief →'}
+            {isAward ? 'Who won →' : 'Partners & rivals →'}
           </Link>
         </div>
       </div>

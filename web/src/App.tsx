@@ -12,7 +12,7 @@ import { Landing } from './components/Landing';
 import { Hackathon } from './components/Hackathon';
 import { LoginPage, RequireAuth } from './Login';
 import { ConsentPage } from './Consent';
-import { PartnersPage } from './components/Partners';
+import { BidTogetherPage } from './components/BidTogether';
 import { JoinFromInvitePage, PartnerRespondPage } from './components/PartnerRespond';
 
 export function App() {
@@ -45,7 +45,7 @@ export function App() {
           <Route path="tenders/:id" element={<TenderDetailPage />} />
           <Route path="competitors" element={<CompetitorsPage />} />
           <Route path="competitors/:id" element={<CompetitorDetailPage />} />
-          <Route path="partners" element={<PartnersPage />} />
+          <Route path="partners" element={<BidTogetherPage />} />
           <Route path="company" element={<CompanyPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

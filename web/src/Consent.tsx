@@ -39,7 +39,7 @@ export function ConsentPage() {
         <div className="auth-card">
           <h1>Nothing to approve</h1>
           <p className="auth-switch">This page is opened by an app asking to connect to Radar.</p>
-          <Link to="/tenders">Go to your workspace</Link>
+          <Link to="/partners">Go to your workspace</Link>
         </div>
       </div>
     );
