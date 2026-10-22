@@ -54,7 +54,7 @@ type SlideDef = {
 };
 
 export function Hackathon() {
-  const slides = useMemo(buildSlides, []);
+  const slides = useMemo(() => orderSlides(buildSlides()), []);
   const [i, setI] = useState(() => initialIndex(slides));
   const [notes, setNotes] = useState(false);
   const [overview, setOverview] = useState(false);
@@ -188,6 +188,13 @@ export function Hackathon() {
   );
 }
 
+// Story order: the pivot comes right after the problem; the rest follows the build.
+const ORDER = ['title', 'problem', 'edge', 'pitch', 'foundation', 'brainstorm', 'timeline'];
+function orderSlides(all: SlideDef[]) {
+  const rank = (id: string) => (ORDER.includes(id) ? ORDER.indexOf(id) : ORDER.length);
+  return all.map((sl, k) => ({ sl, k })).sort((x, y) => rank(x.sl.id) - rank(y.sl.id) || x.k - y.k).map((x) => x.sl);
+}
+
 function initialIndex(slides: SlideDef[]) {
   const h = decodeURIComponent(location.hash.slice(1));
   const k = slides.findIndex((s) => s.id === h);
@@ -206,17 +213,18 @@ function buildSlides(): SlideDef[] {
       dark: true,
       tags: ['C5'],
       notes:
-        'Open with the one-liner, nothing else. Judges need an anchor: "a bid office for small French IT agencies". Then go straight to the problem.',
+        'Open with the one-liner: "a platform that helps small French IT firms find the partners to bid together". Be clear that the radar underneath is live and the partner finder is what we are building now.',
       body: (
         <div className="hk-title">
           <p className="hk-kicker">Future Founders · Data-Centric Agents · 22 Oct 2026</p>
           <h1 tabIndex={-1}>
-            Radar is the bid office <br />a 40-person agency <em>never had.</em>
+            Win the tenders <br /><em>too big to bid alone.</em>
           </h1>
           <p className="hk-lede">
-            An agent that reads every French public IT tender on TED, tells a small consultancy which ones to bid on, and shows who
-            won contracts like it before. It does the pre-bid homework on its own, grades its own predictions when the award is
-            published, and learns from your decisions. <strong>Every claim links to its TED notice.</strong>
+            Radar is a collaborative platform that helps small French IT firms find the partners they need to bid together, as a
+            <i> groupement</i>. Underneath sits a working agent that reads every French public IT tender on TED, says which to
+            bid on and who won work like it, and does the pre-bid homework on its own.{' '}
+            <strong>Every claim links to its TED notice.</strong>
           </p>
           <div className="hk-row">
             <a className="hk-btn hk-btn-primary" href={APP_URL} target="_blank" rel="noreferrer">
@@ -243,7 +251,7 @@ function buildSlides(): SlideDef[] {
         <div className="hk-split">
           <div>
             <h2 tabIndex={-1}>
-              Small agencies <em>bid blind.</em>
+              Small agencies <em>bid alone, and blind.</em>
             </h2>
             <p className="hk-lede">
               French public buyers publish every IT tender and every award on TED. Large integrators have bid offices that read
@@ -259,6 +267,10 @@ function buildSlides(): SlideDef[] {
               <li>
                 <b>They don't know the competition.</b> The award notices name every winner, but nobody joins them up.
               </li>
+              <li>
+                <b>They can't cover the whole lot.</b> Tenders bundle design, build, hosting and support. Missing one piece
+                turns a tender that mostly fits into a no-go, unless you find a partner in time.
+              </li>
             </ul>
           </div>
           <div className="hk-card hk-persona">
@@ -272,8 +284,11 @@ function buildSlides(): SlideDef[] {
               <Stat value={fmt(SNAPSHOT.tedTotal)} label="French IT notices on TED since Jan 2025 (CPV 72*)" />
               <Stat value={fmt(SNAPSHOT.awardNotices)} label="award notices naming the winners" />
               <Stat value={fmt(SNAPSHOT.open)} label="tenders open right now" />
+              <Stat value="155" label="award notices with a multi-company bidder (groupement)" />
             </div>
-            <p className="hk-foot">{SNAP}. Counts from our Postgres; the TED total matches TED's own API (see “Proof”).</p>
+            <p className="hk-foot">
+              {SNAP}. Counts from our Postgres; the TED total matches TED's own API (see “Proof”). Groupements: TED API, 12:35 UTC.
+            </p>
           </div>
         </div>
       ),
@@ -284,7 +299,7 @@ function buildSlides(): SlideDef[] {
       dark: true,
       tags: ['C1', 'C5'],
       notes:
-        'This is the one pitch slide the rules ask for: who, why now, first users. The route to market is the strongest point: the award data itself is our lead list.',
+        'The one pitch slide the rules ask for: who, why now, first users. The platform grows itself: every partner invite brings a new company onto Radar.',
       body: (
         <div>
           <p className="hk-kicker">The one pitch slide</p>
@@ -295,30 +310,30 @@ function buildSlides(): SlideDef[] {
             <div className="hk-card">
               <h3>Who</h3>
               <p>
-                French and EU SME digital agencies and IT consultancies (10–250 staff) that already bid on public contracts but
-                have no bid team. Next: any SME selling to the public sector; the pipeline works for any CPV division.
+                French SME digital agencies and IT consultancies (10–250 staff) that bid on public contracts without a bid team,
+                and the partners they need to cover a whole tender. Next: any SME selling to the public sector.
               </p>
             </div>
             <div className="hk-card">
               <h3>Why now</h3>
               <p>
-                Since 2023–24, TED publishes every EU notice as structured <b>eForms</b> with a free search API: winners, bid
-                counts, award criteria, procedure ids that link tender to award. And agents can now read French tender text
-                and reason over it with tools.
+                Since 2023–24, TED publishes every EU notice as structured <b>eForms</b> with a free API, including{' '}
+                <b>who bid together</b>, who won and how many bids came in. Agents can now read the French text, find the
+                gap in your offer and draft the approach to a partner.
               </p>
             </div>
             <div className="hk-card">
               <h3>First users</h3>
               <p>
-                <b>The data is the lead list.</b> Every award notice names a winner, so we can reach each firm that won a
-                French public IT contract with “you won X at Y; here are 3 open tenders like it and who you'll face”.
-                Freemium matching, paid briefs and Autopilot. Channels: Numeum, CINOV, regional digital clusters.
+                <b>Every invite is a new user.</b> A partner who gets a proposal can claim their profile and get their own
+                radar. Seed it from the data: every award notice names its winners, so we can reach each firm with its own
+                matches. Channels: Numeum, CINOV, regional digital clusters.
               </p>
             </div>
           </div>
           <p className="hk-statement">
-            Others alert you to tenders or draft your answer. <em>Radar tells you whether to bid, against whom, who to team
-            up with, and learns from the outcome.</em>
+            Others alert you to tenders or draft your answer. <em>Radar finds who to bid with, and the network gets better
+            with every reply.</em>
           </p>
         </div>
       ),
@@ -351,6 +366,10 @@ function buildSlides(): SlideDef[] {
               <li>
                 <b>Asked “what makes it unique?”</b> French tools split into alert feeds and AI writers. None we found learns
                 from outcomes. That became Autopilot: it does the homework unprompted, logs predictions, grades itself.
+              </li>
+              <li>
+                <b>A mentor: “you have no edge.”</b> Fair. A radar is easy to copy. We pivoted to what only French data plus a
+                network gives: helping small firms find the partners to bid together.
               </li>
             </ol>
           </div>
@@ -390,7 +409,7 @@ function buildSlides(): SlideDef[] {
     },
     {
       id: 'edge',
-      title: 'Mentor feedback: “no edge”',
+      title: 'The pivot: bid together',
       tags: ['C1', 'C3', 'C5'],
       labels: ['planned'],
       notes:
@@ -398,7 +417,7 @@ function buildSlides(): SlideDef[] {
       body: (
         <div className="hk-split hk-split-wide">
           <div>
-            <p className="hk-kicker">Feedback at 12:30</p>
+            <p className="hk-kicker">The pivot · 12:30, after mentor feedback</p>
             <h2 tabIndex={-1}>
               “You have no edge.” <em>So we looked for one only French data gives.</em>
             </h2>
@@ -421,7 +440,7 @@ function buildSlides(): SlideDef[] {
             </p>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Partner finder (designing now, not built)</p>
+            <p className="hk-kicker">Partner finder (being built now, not in the demo)</p>
             <ol className="hk-steps">
               <li>
                 <b>Find:</b> for a tender, rank firms that fill your gaps, have bid jointly before, know this buyer and don't
@@ -439,10 +458,47 @@ function buildSlides(): SlideDef[] {
               </li>
             </ol>
             <p className="hk-callout">
-              Why it's hard to copy: who answers, how fast and with which references is data nobody can scrape. Every
-              invite is also a new user.
+              Why it's hard to copy: a network. Who answers, how fast and with which references is data nobody can scrape,
+              and every invite brings a new company onto the platform.
             </p>
           </div>
+        </div>
+      ),
+    },
+    {
+      id: 'foundation',
+      title: 'What the platform stands on',
+      tags: ['C2', 'C3'],
+      labels: ['live', 'planned'],
+      notes:
+        'The pivot does not throw work away. Every partner-finder step reuses something that already runs on dev. Be precise about which column is live.',
+      body: (
+        <div>
+          <h2 tabIndex={-1}>
+            The radar is live. <em>The network builds on it.</em>
+          </h2>
+          <table className="hk-table hk-table-big">
+            <thead>
+              <tr>
+                <th>Partner-finder step (planned)</th>
+                <th>Already running on dev</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FOUNDATION.map((f) => (
+                <tr key={f[0]}>
+                  <td>
+                    <b>{f[0]}</b>
+                  </td>
+                  <td>{f[1]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="hk-callout">
+            Live today: a pre-bid dossier for a tender worth more than €1M already tells a small firm to consider a groupement
+            or subcontracting. What's missing is <i>who</i> to call. That's the partner finder.
+          </p>
         </div>
       ),
     },
@@ -857,7 +913,7 @@ function buildSlides(): SlideDef[] {
               Sign in with <code>demo@rivage-numerique.fr</code> / <code>rivage-demo-2026</code> (a fictional company; the data is real).
             </li>
             <li>
-              Ask: <i>“What should we bid on this month?”</i>, <i>“How do we beat CGI on this one?”</i>, or open Autopilot and press
+              Ask: <i>“What should we bid on this month?”</i>, <i>“Which open tenders are too big for us alone?”</i>, or open Autopilot and press
               <b> Skip…</b> to watch it learn.
             </li>
           </ol>
@@ -888,6 +944,15 @@ const TIMELINE = [
   { t: '11:21', e: 'Autopilot ships; MCP server with OAuth; scorecard made fair (same tenders for both).' },
   { t: '12:07', e: 'Teammates\' issues ship: deadline sort, richer company page, read time, a one-minute homepage film.' },
   { t: '12:30', e: 'A mentor says “you have no edge”. Brainstorm what only French data allows → partner finder.' },
+];
+
+const FOUNDATION: [string, string][] = [
+  ['Spot the tender you can\'t do alone', 'Matching on CPV, text, buyer and region; Autopilot dossiers flag scope and size gaps.'],
+  ['Find partners who fill the gap', 'Award index of 2,610 notices with winners merged across name variants; ranking by buyer, CPV, text and recency.'],
+  ['Check they are real and relevant', 'Keenable web research on any company, saved with sources.'],
+  ['Draft the approach in French', 'Claude agent with 12 tools already writes French buyer questions and memos from sourced facts.'],
+  ['Learn who answers and who wins', 'Feedback rules and a prediction scorecard graded against real TED awards.'],
+  ['Bring partners onto the platform', 'Sign-up, one company profile per user built by chat, MCP access from Claude or ChatGPT.'],
 ];
 
 const DECISIONS: [string, string, string][] = [
@@ -961,12 +1026,13 @@ const STATUS = {
     'BOAMP and DECP sources',
     'Automated test suite (we typecheck, build and browser-test)',
     'Citation checking and per-user rate limits (#30)',
+    'Partner finder, the core of the pivot: designed, being built, not in the demo',
   ],
 };
 
 const ROADMAP = [
   {
-    when: 'Designing now',
+    when: 'Building now',
     h: 'Partner finder',
     items: ['Import TED joint-bid groups (group → members, lead)', 'Score partners per tender; agent drafts the French outreach, you send it', 'Score replies; invite → claim profile → network effect'],
   },
