@@ -38,7 +38,7 @@ export async function searchTenders(input: SearchTendersInput) {
     return `$${params.length}`;
   };
   const where: string[] = [];
-  let rank = '0';
+  let rank: string | null = null;
   if (input.query?.trim()) {
     const q = p(input.query.trim());
     where.push(`t.search @@ websearch_to_tsquery('french', ${q})`);
@@ -57,7 +57,7 @@ export async function searchTenders(input: SearchTendersInput) {
        (SELECT coalesce(json_agg(a.winner_name), '[]') FROM awards a WHERE a.tender_id = t.id) AS winners
      FROM tenders t
      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-     ORDER BY ${rank} DESC, ${input.openOnly ? 't.deadline ASC' : 't.publication_date DESC NULLS LAST'}
+     ORDER BY ${rank ? `${rank} DESC, ` : ''}${input.openOnly ? 't.deadline ASC' : 't.publication_date DESC NULLS LAST'}
      LIMIT ${limit}`,
     params,
   );
