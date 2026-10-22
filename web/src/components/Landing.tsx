@@ -510,20 +510,20 @@ export function Landing() {
                   them against the real winners. We ran the same test on past tenders:
                 </p>
                 <p className="lp-bt-big">
-                  <b>1.9×</b>
+                  <b>2×</b>
                   <span>more often than a "most frequent winners" baseline</span>
                 </p>
                 <div className="lp-bt">
-                  <div className="lp-bt-row" style={{ '--w': 17 / 149 } as CSSProperties}>
-                    <span>Radar's top 5</span><i /><b className="lp-mono">17 / 149</b>
+                  <div className="lp-bt-row" style={{ '--w': 18 / 151 } as CSSProperties}>
+                    <span>Radar's top 5</span><i /><b className="lp-mono">18 / 151</b>
                   </div>
-                  <div className="lp-bt-row base" style={{ '--w': 9 / 150 } as CSSProperties}>
-                    <span>Most frequent winners</span><i /><b className="lp-mono">9 / 150</b>
+                  <div className="lp-bt-row base" style={{ '--w': 9 / 151 } as CSSProperties}>
+                    <span>Most frequent winners</span><i /><b className="lp-mono">9 / 151</b>
                   </div>
                 </div>
                 <p className="lp-bt-note">
-                  Tenders where an actual winner was among five predicted bidders. Backtest on 150 past French IT
-                  tenders, 22 Oct 2026. Not a win probability.
+                  Tenders where an actual winner was among five predicted bidders. Backtest on the same 151 past French IT
+                  tenders for both, 22 Oct 2026. Not a win probability.
                 </p>
               </article>
 

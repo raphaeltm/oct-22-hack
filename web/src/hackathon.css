@@ -130,6 +130,7 @@
 .hk-split-wide { grid-template-columns: 1fr 1fr; }
 .hk-split-shot { grid-template-columns: 1.15fr 0.85fr; }
 .hk-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.hk-grid4 { grid-template-columns: repeat(4, 1fr); }
 .hk-tight { margin-top: 18px; }
 .hk-list { padding-left: 1.1em; margin: 0; }
 .hk-list li { margin-bottom: 0.5em; }
@@ -234,7 +235,7 @@
   .hk-stage { position: static; }
   .hk-slide, .hk-slide.is-current { position: static; display: block; animation: none; border-bottom: 1px solid var(--paper-line); }
   .hk-slide-inner { min-height: 0; padding: 36px 18px; }
-  .hk-split, .hk-split-wide, .hk-split-shot, .hk-grid3, .hk-loop { grid-template-columns: 1fr; }
+  .hk-split, .hk-split-wide, .hk-split-shot, .hk-grid3, .hk-grid4, .hk-loop { grid-template-columns: 1fr; }
   .hk-journey { grid-template-columns: 1fr 1fr; max-width: none; }
   .hk-flow { grid-template-columns: 1fr 1fr; }
   .hk-flow-step::after { display: none; }
