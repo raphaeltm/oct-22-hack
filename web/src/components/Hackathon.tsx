@@ -673,12 +673,12 @@ function buildSlides(): SlideDef[] {
             One journey, <em>start to finish.</em>
           </h2>
           <div className="hk-journey">
-            <Shot src="autopilot" step="1" caption="Autopilot inbox: 22 dossiers built without being asked; Go first." />
-            <Shot src="dossier" step="2" caption="A dossier: verdict, calendar, criteria, likely bidders, draft questions in French." />
-            <Shot src="competitors" step="3" caption="Competitors ranked from real award notices, not seeded." />
-            <Shot src="tenders" step="4" caption="Matched tenders with a fit score and a one-line reason." />
+            <Shot src="bid-together" step="1" caption="Bid together: matched tenders that need a partner, with the missing capability named." />
+            <Shot src="opportunity" step="2" caption="An opportunity: why it fits, and the gap flagged from the French notice." />
+            <Shot src="partner-finder" step="3" caption="Partner finder: firms that fill the gap, with TED awards and joint bids as evidence." />
+            <Shot src="autopilot" step="4" caption="Autopilot: pre-bid dossiers built without being asked." />
           </div>
-          <p className="hk-foot">Screenshots of the dev deployment, 22 Oct 2026 ~11:55 UTC, demo user. Try it yourself: last slide.</p>
+          <p className="hk-foot">Screenshots of the dev deployment, 22 Oct 2026 ~13:20 UTC, demo user. Try it yourself: last slide.</p>
         </div>
       ),
     },
