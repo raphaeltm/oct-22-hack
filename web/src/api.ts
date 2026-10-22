@@ -193,6 +193,7 @@ export type InboxItem = {
   publicationNumber: string;
   deadline: string | null;
   estimatedValue: number | null;
+  textLength: number | null;
   decision: Decision | null;
   reason: SkipReason | null;
 };

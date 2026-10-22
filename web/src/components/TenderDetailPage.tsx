@@ -13,8 +13,10 @@ import {
   Initials,
   Loading,
   PageHeader,
+  readTimeLabel,
   ScoreRing,
   Stat,
+  tenderTextLength,
   useApi,
 } from './ui';
 
@@ -70,6 +72,11 @@ export function TenderDetailPage() {
           label="CPV codes"
           value={<span className="cpvs" title={tender.cpvCodes.join(', ')}>{tender.cpvCodes[0] ?? '—'}</span>}
           hint={tender.cpvCodes.length > 1 ? `+${tender.cpvCodes.length - 1} more` : undefined}
+        />
+        <Stat
+          label="Read time"
+          value={readTimeLabel(tenderTextLength(tender.title, tender.description))}
+          hint={`${tenderTextLength(tender.title, tender.description).toLocaleString('en-GB')} chars`}
         />
       </div>
 

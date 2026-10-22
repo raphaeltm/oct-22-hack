@@ -37,6 +37,26 @@ export function daysUntil(iso: string | null | undefined) {
   return d ? Math.ceil((d.getTime() - Date.now()) / 86_400_000) : null;
 }
 
+const CHARS_PER_MINUTE = 1500;
+
+export function readTimeLabel(chars: number): string {
+  const minutes = Math.ceil(chars / CHARS_PER_MINUTE);
+  return minutes <= 1 ? '<1 min read' : `~${minutes} min read`;
+}
+
+export function tenderTextLength(title: string, description: string | null | undefined): number {
+  return title.length + (description?.length ?? 0);
+}
+
+export function ReadTimeChip({ chars }: { chars: number }) {
+  if (chars <= 0) return null;
+  return (
+    <span className="chip muted" title={`${chars.toLocaleString('en-GB')} characters`}>
+      <Icon name="clock" size={13} /> {readTimeLabel(chars)}
+    </span>
+  );
+}
+
 // ---------- data loading ----------
 
 export function useDebounced<T>(value: T, ms: number) {
