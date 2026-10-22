@@ -79,6 +79,20 @@ const RIVALS = [
 const PROFILE_CPV = ['72000000', '72200000', '72413000', '72224000', '79411000', '72212000'];
 const PROFILE_KW = ['RGAA', 'DSFR', 'SecNumCloud', 'accessibilité', 'refonte', 'souverain', 'open data', 'tableau de bord', 'logiciel libre'];
 
+// Autopilot (issue #19) is still being built: keep it labelled "coming soon"
+// and show no hit rates or time savings until a real demo run produces them.
+const LOOP = ['Tender published', 'Matched to you', 'Dossier assembled', 'You decide', 'Award notice lands', 'Prediction graded'];
+const DOSSIER = [
+  'Award criteria and weights',
+  'Question and submission deadlines',
+  'Framework and duration',
+  "Buyer's award history",
+  'Possible incumbent',
+  'Likely competitor field',
+  'DC1 · DC2 · DUME · ATTRI1 · URSSAF',
+  'Draft questions for the buyer',
+];
+
 const PIPELINE = [
   { k: 'TED Search API', d: 'French notices and award results, CPV 72*, since 2025' },
   { k: 'BullMQ on Redis', d: 'Idempotent import every 6 hours, plus research jobs' },
@@ -142,6 +156,7 @@ export function Landing() {
         <nav aria-label="Sections" className="lp-nav-links">
           <a href="#how">How it works</a>
           <a href="#evidence">Evidence</a>
+          <a href="#autopilot">Autopilot</a>
           <a href="#stack">Under the hood</a>
         </nav>
         <div className="lp-nav-cta">
@@ -400,6 +415,70 @@ export function Landing() {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
+
+        {/* ---------------- autopilot (coming soon) ---------------- */}
+        <section className="lp-section lp-auto" id="autopilot">
+          <div className="lp-wrap">
+            <div className="lp-auto-head" data-reveal>
+              <p className="lp-kicker">Next: Autopilot</p>
+              <span className="lp-soon"><span className="lp-live" /> Coming soon · in development</span>
+            </div>
+            <h2 className="lp-h2" data-reveal>
+              Your bid desk works while you sleep, <em>and gets sharper with every award notice.</em>
+            </h2>
+            <p className="lp-auto-lede" data-reveal>
+              Alert tools stop at the alert. AI drafting tools wait for you to upload documents. Radar will start the
+              homework the moment a tender matches, then check its own predictions against the award notice.
+            </p>
+
+            <ol className="lp-loop" data-reveal aria-label="Autopilot loop">
+              {LOOP.map((l, i) => (
+                <li key={l} style={{ '--i': i } as CSSProperties}>
+                  <span className="lp-mono">{String(i + 1).padStart(2, '0')}</span>
+                  {l}
+                </li>
+              ))}
+            </ol>
+
+            <div className="lp-auto-grid">
+              <article className="lp-auto-card lp-auto-wide" data-reveal>
+                <span className="lp-mono lp-auto-n">01</span>
+                <h3>A pre-bid dossier, before you ask</h3>
+                <p>
+                  When a new French IT tender fits your company, the agent assembles the dossier on its own. Every line
+                  links back to its TED source.
+                </p>
+                <ul className="lp-dossier">
+                  {DOSSIER.map((d) => (
+                    <li key={d}><span aria-hidden>✓</span>{d}</li>
+                  ))}
+                </ul>
+              </article>
+              <article className="lp-auto-card" data-reveal style={{ '--i': 1 } as CSSProperties}>
+                <span className="lp-mono lp-auto-n">02</span>
+                <h3>It grades itself</h3>
+                <p>
+                  It writes down who it expects to compete and who might hold the contract today. When the award
+                  notice arrives, it scores those predictions automatically and keeps a running scorecard.
+                </p>
+                <div className="lp-grade" aria-hidden>
+                  <span>Predicted</span><i /><span>Awarded</span><i /><b>Scored</b>
+                </div>
+              </article>
+              <article className="lp-auto-card" data-reveal style={{ '--i': 2 } as CSSProperties}>
+                <span className="lp-mono lp-auto-n">03</span>
+                <h3>It learns from you</h3>
+                <p>
+                  Mark a tender bid, skip, won or lost and give a reason. Radar reweights your fit score, and your
+                  corrections become standing facts about your company.
+                </p>
+                <div className="lp-feedback" aria-hidden>
+                  {['Bid', 'Skip', 'Won', 'Lost'].map((f) => <span key={f}>{f}</span>)}
+                </div>
+              </article>
+            </div>
           </div>
         </section>
 
