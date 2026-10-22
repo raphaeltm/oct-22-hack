@@ -39,6 +39,10 @@ const FIELDS = [
   'tender-value',
   'tender-value-cur',
   'result-value-lot',
+  // Groupements: the leader flag is only present when a tendering party has
+  // several members; the full structure is read from the notice XML (ted-parties.ts).
+  'tendering-party-name',
+  'tendering-party-leader',
   // Pre-bid dossier (eForms): award criteria, duration/renewals, framework,
   // procurement documents, bids received, contract conclusion.
   'procedure-identifier',

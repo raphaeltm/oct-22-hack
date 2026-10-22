@@ -233,6 +233,7 @@ const paths: Record<string, ReactNode> = {
   building: <><path d="M3 21h18M5 21V8l7-5 7 5v13" /><path d="M9 21v-6h6v6" /></>,
   refresh: <path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4" />,
   globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>,
+  handshake: <path d="M11 17l2 2a1.4 1.4 0 0 0 2-2M13 15l2.5 2.5a1.4 1.4 0 0 0 2-2L14 12M9.5 8.5L12 6a3 3 0 0 1 4 0l5 5M3 11l5-5 4.5 4.5a1.5 1.5 0 0 1-2 2L8 10M3 11l6 6a1.4 1.4 0 0 0 2-2" />,
   trophy: <path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4a3 3 0 0 0 4 4M16 6h4a3 3 0 0 1-4 4M12 13v4M8 20h8M10 17h4" />,
 };
 

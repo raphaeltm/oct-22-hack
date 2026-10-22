@@ -499,3 +499,64 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); tex
   .bar-row .bar-track { grid-column: 1 / -1; grid-row: 2; }
   .verdict-banner { flex-direction: column; }
 }
+
+/* ---------- partner finder ---------- */
+.chip.go { background: var(--green-soft); color: var(--green); border-color: #c4e8d1; }
+.chip.consider { background: var(--amber-soft); color: var(--amber); border-color: #f6dfb8; }
+.chip.nogo { background: var(--red-soft); color: var(--red); border-color: #f9d0cb; }
+.chip.gap { background: #f4eefb; color: #6a3d9a; border-color: #e4d6f3; }
+.grow { flex: 1; min-width: 0; }
+.partners { margin-top: 28px; }
+.gaps-card { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.gaps-card .sub-title { margin: 0; }
+.gaps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gaps li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.gaps q { font-style: italic; }
+.partner-card:hover { border-color: var(--border); box-shadow: var(--shadow); }
+.partner-card p { margin: 0; }
+.partner-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.partners-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.partners-foot .brief-note { flex: 1; margin: 0; }
+.composer { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; border-color: var(--accent); }
+.composer-head { display: flex; align-items: center; justify-content: space-between; }
+.composer-head .sub-title { margin: 0; }
+.composer label, .public-form label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 500; color: var(--text-2); }
+.composer input, .composer select, .composer textarea, .public-form input, .public-form select, .public-form textarea {
+  padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 14px; background: var(--surface); font-weight: 400; color: var(--text);
+}
+.composer textarea { font-family: var(--font); line-height: 1.5; resize: vertical; }
+.composer-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.invite-list { display: grid; gap: 10px; }
+.invite-row { display: flex; flex-direction: column; gap: 10px; }
+.invite-head { display: flex; align-items: center; gap: 12px; }
+.response { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.response p, .response h4 { margin: 0; }
+.response .examples { margin: 0; padding-left: 16px; display: grid; gap: 4px; }
+.bar-row.score-part { grid-template-columns: 130px minmax(60px, 1fr) 48px minmax(0, 2fr); }
+.bar-row.score-part .bar-track span { background: var(--accent); }
+
+/* ---------- public partner page ---------- */
+.public-page { min-height: 100%; background: var(--bg); }
+.public-head { padding: 18px 24px; }
+.public-main { max-width: 720px; margin: 0 auto; padding: 8px 20px 60px; display: flex; flex-direction: column; gap: 16px; }
+.public-card { display: flex; flex-direction: column; gap: 14px; padding: 24px; }
+.public-card h1 { font-size: 22px; margin: 0; line-height: 1.3; }
+.public-card h2 { font-size: 18px; margin: 0; }
+.public-card p { margin: 0; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.segmented-field { border: 0; padding: 0; margin: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.segmented-field legend { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+.radio-pill { flex-direction: row !important; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--border-strong); border-radius: 999px; cursor: pointer; }
+.radio-pill.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+.radio-pill input { accent-color: var(--accent); }
+.radio-pill:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.refs { display: flex; flex-direction: column; gap: 8px; }
+.refs .label { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.ref-row { display: grid; grid-template-columns: 2fr 1.3fr 80px; gap: 8px; }
+.thanks .btn { align-self: flex-start; }
+@media (max-width: 640px) {
+  .form-grid, .ref-row { grid-template-columns: 1fr; }
+  .bar-row.score-part { grid-template-columns: 1fr auto; }
+  .bar-row.score-part .bar-note { grid-column: 1 / -1; }
+  .invite-head { flex-wrap: wrap; }
+}

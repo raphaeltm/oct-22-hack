@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api } from '../api';
 import { DossierPanel } from './Autopilot';
+import { PartnerFinderPanel } from './Partners';
 import {
   AskButton,
   DeadlineChip,
@@ -110,6 +111,8 @@ export function TenderDetailPage() {
       )}
 
       {!isAward && <DossierPanel tenderId={tender.id} onFeedback={matches.reload} />}
+
+      {!isAward && <PartnerFinderPanel tenderId={tender.id} />}
 
       <section className="brief">
         <div className="section-head">

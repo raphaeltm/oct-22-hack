@@ -14,6 +14,7 @@ import { userRequestContext } from './mastra/context';
 import { autopilotRoutes } from './routes/autopilot';
 import { data } from './routes/data';
 import { matchesRoutes } from './routes/matches';
+import { partnersRoutes, publicPartnerRoutes } from './routes/partners';
 
 const hasModelKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
@@ -23,11 +24,12 @@ const app = new Hono<{ Variables: AuthVariables }>();
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw));
 
 // Load the session for every API request, then require it for everything
-// except health and auth. Routes added later under /api/* are covered too.
+// except health, auth and the token-scoped partner invite pages (/api/public/*,
+// see routes/partners.ts). Routes added later under /api/* are covered too.
 app.use('/api/*', sessionMiddleware);
 app.use('/api/*', async (c, next) => {
   const path = c.req.path;
-  if (path === '/api/health' || path.startsWith('/api/auth/')) return next();
+  if (path === '/api/health' || path.startsWith('/api/auth/') || path.startsWith('/api/public/')) return next();
   return requireAuth(c, next);
 });
 
@@ -55,6 +57,8 @@ async function threadAccess(threadId: string, userId: string) {
 // and /competitors?forCompany=1 win over /competitors/:id.
 app.route('/api', matchesRoutes);
 app.route('/api', autopilotRoutes);
+app.route('/api', partnersRoutes);
+app.route('/api/public', publicPartnerRoutes);
 app.route('/api', data);
 
 app.get('/api/threads/:threadId/messages', async (c) => {

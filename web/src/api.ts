@@ -228,6 +228,141 @@ export type Result<T> = { data: T; mock: boolean };
 
 export type TenderSearch = { total: number; tenders: Tender[] };
 
+// --- partner finder (server/src/lib/partners.ts, lib/invites.ts) ---
+
+export type PartnerRole = 'cotraitant' | 'sous-traitant' | 'mandataire';
+
+export const ROLE_LABELS: Record<PartnerRole, string> = {
+  cotraitant: 'Co-contractor (you lead)',
+  'sous-traitant': 'Subcontractor',
+  mandataire: 'They lead, you join',
+};
+
+export type PartnerEvidence = { tenderId: string; publicationNumber: string; title: string; buyer: string | null; date: string | null; url: string | null; capability: string | null };
+export type CoBid = { consortium: string | null; partners: string[]; leader: boolean; tenderId: string; title: string; buyer: string | null; date: string | null; publicationNumber: string; url: string | null };
+
+export type PartnerCandidate = {
+  organisationId: string;
+  name: string;
+  score: number;
+  role: PartnerRole;
+  roleNote: string;
+  covers: string[];
+  why: string;
+  signals: { capability: number; similarity: number; coBids: number; buyer: number; region: number; network: number; overlap: number };
+  evidence: PartnerEvidence[];
+  coBids: CoBid[];
+  sameBuyerWins: number;
+  wins: number;
+  distinctBuyers: number;
+  large: boolean;
+  city: string | null;
+  region: string | null;
+  siret: string | null;
+  contactEmail: string | null;
+  contactSource: string | null;
+  website: string | null;
+  network: { invites: number; responded: number; interested: number; medianHours: number | null; member: boolean } | null;
+};
+
+export type PartnerFinder = {
+  tender: { id: string; publicationNumber: string; title: string; buyerName: string | null; deadline: string | null; url: string | null; noticeType: string };
+  gaps: { key: string; label: string; evidence: string }[];
+  covered: string[];
+  mode: 'gap' | 'capacity';
+  partners: PartnerCandidate[];
+  notes: string[];
+};
+
+export type ResponseBreakdown = {
+  total: number;
+  parts: { key: string; label: string; points: number; max: number; note: string }[];
+  verified: { siret: boolean | null; references: { title: string; matched: { title: string; buyer: string | null; url: string | null } | null }[] };
+};
+
+export type PartnerResponse = {
+  interest: 'yes' | 'maybe' | 'no';
+  role: PartnerRole | null;
+  companyName: string | null;
+  siret: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  website: string | null;
+  capabilities: string | null;
+  availability: string | null;
+  references: { title: string; buyer?: string; year?: string }[];
+  message: string | null;
+  score: number | null;
+  breakdown: ResponseBreakdown | null;
+  joinedRadar: boolean;
+  createdAt: string;
+};
+
+export type PartnerInvite = {
+  id: string;
+  link: string;
+  tender: { id: string; title: string; publicationNumber: string; buyerName: string | null; deadline: string | null };
+  organisationId: string | null;
+  partnerName: string;
+  contactEmail: string | null;
+  role: PartnerRole;
+  need: string;
+  subject: string;
+  body: string;
+  fitScore: number | null;
+  status: 'draft' | 'sent' | 'opened' | 'responded';
+  sentAt: string | null;
+  openedAt: string | null;
+  respondedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+  response: PartnerResponse | null;
+};
+
+export type PublicInvite = {
+  from: { name: string; regions: string[] };
+  partnerName: string;
+  role: PartnerRole;
+  need: string;
+  tender: {
+    title: string; buyerName: string | null; deadline: string | null; deadlineAt: string | null; estimatedValue: number | null;
+    estimatedValueLabel: string | null; publicationNumber: string; url: string | null;
+  };
+  responded: boolean;
+  expired: boolean;
+};
+
+export type PartnerResponseInput = {
+  interest: 'yes' | 'maybe' | 'no';
+  role?: PartnerRole | null;
+  companyName?: string;
+  siret?: string;
+  contactName?: string;
+  contactEmail?: string;
+  website?: string;
+  capabilities?: string;
+  availability?: string;
+  references: { title: string; buyer?: string; year?: string }[];
+  message?: string;
+};
+
+/** Public (no session) calls for the partner response page. Errors carry the server message. */
+async function publicCall(method: 'GET' | 'POST', path: string, body?: unknown): Promise<any> {
+  const res = await fetch(path, {
+    method,
+    headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error(json?.error ?? `Request failed (${res.status})`) as Error & { status?: number; issues?: string[] };
+    err.status = res.status;
+    err.issues = json?.issues;
+    throw err;
+  }
+  return json;
+}
+
 class HttpError extends Error {
   constructor(public status: number) {
     super(`Request failed (${status})`);
@@ -467,6 +602,31 @@ export const api = {
     send('POST', `/api/tenders/${encodeURIComponent(id)}/feedback`, { decision, reason }),
 
   undoFeedback: (id: string): Promise<{ learned: Learned }> => send('DELETE', `/api/tenders/${encodeURIComponent(id)}/feedback`),
+
+  partners: (tenderId: string) =>
+    withFallback<PartnerFinder>(`/api/tenders/${encodeURIComponent(tenderId)}/partners`, (r) => r as PartnerFinder, null),
+
+  invites: (tenderId?: string) =>
+    withFallback<PartnerInvite[]>(
+      `/api/partners/invites${tenderId ? `?tenderId=${encodeURIComponent(tenderId)}` : ''}`,
+      (r) => arr<PartnerInvite>(r.invites),
+      null,
+    ),
+
+  createInvite: (input: { tenderId: string; organisationId?: string | null; partnerName?: string; contactEmail?: string; role: PartnerRole; need: string; fitScore?: number | null }): Promise<{ invite: PartnerInvite }> =>
+    send('POST', '/api/partners/invites', input),
+
+  markInviteSent: (id: string, contactEmail?: string): Promise<{ ok: true }> =>
+    send('POST', `/api/partners/invites/${encodeURIComponent(id)}/sent`, { contactEmail }),
+
+  deleteInvite: (id: string): Promise<{ ok: true }> => send('DELETE', `/api/partners/invites/${encodeURIComponent(id)}`),
+
+  claimInvite: (token: string): Promise<{ companyId: string; created: boolean }> => send('POST', '/api/partners/claim', { token }),
+
+  publicInvite: (token: string): Promise<PublicInvite> => publicCall('GET', `/api/public/invites/${encodeURIComponent(token)}`),
+
+  respondToInvite: (token: string, input: PartnerResponseInput): Promise<{ ok: true }> =>
+    publicCall('POST', `/api/public/invites/${encodeURIComponent(token)}/response`, input),
 
   /** Queues agent research on a competitor; progress arrives on /api/jobs/events. */
   research: async (id: string, force = true): Promise<{ jobId?: string }> => {

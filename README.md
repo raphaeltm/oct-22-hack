@@ -38,6 +38,13 @@ the release. See [steering evidence](docs/steering-notes.md) for decisions and s
 
    The agent logs its predicted bidders. They are graded when the award notice with the same eForms `procedure-identifier` is imported. A **backtest** replays past tenders using only earlier awards and compares the result with a naive baseline. **Bid/skip/won/lost** feedback with a reason changes the ranking right away.
 
+6. **Partner finder (groupements).** For an open tender, the agent lists the capabilities the notice asks for that the profile lacks (quoting the French passage). It then ranks firms to co-bid with, using:
+   - TED awards that show those capabilities;
+   - real **joint bids** read from the eForms tendering parties (lead + members, SIRET, city);
+   - wins with the buyer, same region, and how much of their work overlaps the company's own (rivals rank lower).
+
+   The user drafts a French invite with a private link and **sends it from their own mail client** (Radar never emails anyone). The partner answers on a public, token-scoped page (`/p/:token`). The answer is scored 0–100: interest, coverage of the need, references matched against the firm's TED awards, SIRET checksum/match, speed and completeness. A partner who answers can open their own Radar with a pre-filled profile (`/join/:token`). Each invite is an acquisition channel, and response rates feed back into the ranking.
+
 **Target demo flow:** onboard a company in chat → see matching tenders → pick one → get a competitor brief.
 
 ## Data and demo scope
@@ -137,6 +144,11 @@ What exists today:
   Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
   It resumes via `Last-Event-ID` or `?since=<stream id>`; `0` replays everything still retained.
 
+- `GET  /api/tenders/:id/partners` → gaps, covered capabilities and ranked partners (with TED evidence and joint bids)
+- `GET  /api/partners/invites?tenderId=`, `POST /api/partners/invites` `{ tenderId, organisationId?, partnerName?, contactEmail?, role, need }`,
+  `POST /api/partners/invites/:id/sent`, `DELETE /api/partners/invites/:id` (unanswered only), `POST /api/partners/claim` `{ token }`
+- `GET  /api/public/invites/:token`, `POST /api/public/invites/:token/response` (no session: token-scoped, write-once, size- and per-IP rate-limited)
+
 - `POST /api/jobs/ted-import` `{ since?, limit? }` → `202 { jobId }`; queues a TED import (also runs every 6h)
 - `POST /api/competitors/:id/research` `{ force? }` → `202 { jobId }`; queues Keenable web research on an organisation
   (searches FR + EN, Claude summary into `organisations.summary`, sources in `research_notes`; skipped if researched < 7 days ago)
@@ -145,6 +157,7 @@ What exists today:
 
 ## Background jobs
 
+After each TED import, the `ted-import` job also reads the XML of new award notices that report a joint bid (`npm run import:ted-parties -w server -- --limit 50` does it by hand); TED's search API flattens tendering parties, so their structure comes from the notice XML.
 BullMQ queues `ted-import` and `research` on `REDIS_URL` (keys prefixed `rfp:`, override with `QUEUE_PREFIX`), processed by in-process workers
 (`server/src/jobs/`). Set `WORKER=0` to run an API-only process, `TED_IMPORT_SCHEDULE=0` to disable the 6-hourly import.
 Web research uses [Keenable](https://docs.keenable.ai/api-reference/search): with `KEENABLE_API_KEY` it calls `/v1/search`,
@@ -185,4 +198,4 @@ Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `KEEN
 
 ## Validation
 
-Run `npm run check` to typecheck both workspaces and build the production frontend. Docker strips development dependencies from its runtime image.
+Run `npm run check` to typecheck both workspaces and build the production frontend. `npm test` runs the server's logic tests (eForms party parsing, SIRET checks, tender gaps; no database needed). Docker strips development dependencies from its runtime image.
