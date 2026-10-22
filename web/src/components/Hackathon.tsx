@@ -284,10 +284,10 @@ function buildSlides(): SlideDef[] {
               <Stat value={fmt(SNAPSHOT.tedTotal)} label="French IT notices on TED since Jan 2025 (CPV 72*)" />
               <Stat value={fmt(SNAPSHOT.awardNotices)} label="award notices naming the winners" />
               <Stat value={fmt(SNAPSHOT.open)} label="tenders open right now" />
-              <Stat value="155" label="award notices with a multi-company bidder (groupement)" />
+              <Stat value="199" label="award notices with a joint bid (groupement)" />
             </div>
             <p className="hk-foot">
-              {SNAP}. Counts from our Postgres; the TED total matches TED's own API (see “Proof”). Groupements: TED API, 12:35 UTC.
+              {SNAP}. Counts from our Postgres; the TED total matches TED's own API (see “Proof”). Groupements: TED's party-leader flag, checked 13:15 UTC.
             </p>
           </div>
         </div>
@@ -374,7 +374,7 @@ function buildSlides(): SlideDef[] {
             </ol>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Ideas we dropped, and why</p>
+            <p className="hk-kicker">Ideas we dropped or parked, and why</p>
             <table className="hk-table">
               <tbody>
                 <tr>
@@ -400,6 +400,14 @@ function buildSlides(): SlideDef[] {
                 <tr>
                   <td>SWOT generator (#14)</td>
                   <td>The Autopilot dossier already covers it with sourced facts.</td>
+                </tr>
+                <tr>
+                  <td>Renewal radar (predict re-tenders)</td>
+                  <td>Strong, but award data starts in 2025, so we can't backtest it yet.</td>
+                </tr>
+                <tr>
+                  <td>Company-ID map, BODACC, SecNumCloud list</td>
+                  <td>Good add-ons, not an edge. We now store SIRET from the joint-bid notices, which lays the ground for them.</td>
                 </tr>
               </tbody>
             </table>
@@ -427,12 +435,12 @@ function buildSlides(): SlideDef[] {
               groups into plain winners and throw the signal away.
             </p>
             <div className="hk-stats hk-stats-row">
-              <Stat value="155" label="French IT award notices since 2025 with a multi-company bidder" />
+              <Stat value="199" label="French IT award notices since 2025 flagging a multi-company bid" />
               <Stat value={fmt(SNAPSHOT.awardNotices)} label="award notices checked" />
             </div>
             <p className="hk-foot">
-              Counted from TED's API at 12:35 UTC: a bidding party with more member companies than party names (a heuristic;
-              some may be subcontracting). Examples:{' '}
+              Counted from TED's API at 13:15 UTC: award notices whose <code>tendering-party-leader</code> flag marks a
+              multi-member party. Radar reads these notices' XML to store each group, its lead and members. Examples:{' '}
               <a href={TED('17241-2025')} target="_blank" rel="noreferrer">17241-2025</a> “GRP KSHUTTLE” = Deloitte Conseil + KSHUTTLE
               for SNCF;{' '}
               <a href={TED('4575-2025')} target="_blank" rel="noreferrer">4575-2025</a> ENGIT + MEJA (co-traitance) for the
