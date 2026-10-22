@@ -373,12 +373,13 @@ export const api = {
       null,
     ),
 
-  tenders: (params: { q?: string; cpv?: string; open?: boolean; type?: string; limit?: number; offset?: number } = {}) => {
+  tenders: (params: { q?: string; cpv?: string; open?: boolean; type?: string; sort?: string; limit?: number; offset?: number } = {}) => {
     const qs = new URLSearchParams();
     if (params.q) qs.set('q', params.q);
     if (params.cpv) qs.set('cpv', params.cpv);
     if (params.open) qs.set('open', '1');
     if (params.type) qs.set('type', params.type);
+    if (params.sort) qs.set('sort', params.sort);
     if (params.limit) qs.set('limit', String(params.limit));
     if (params.offset) qs.set('offset', String(params.offset));
     return withFallback<TenderSearch>(
