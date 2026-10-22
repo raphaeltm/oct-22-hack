@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api } from '../api';
+import { DossierPanel } from './Autopilot';
 import {
   AskButton,
   DeadlineChip,
@@ -100,6 +101,8 @@ export function TenderDetailPage() {
           <AwardTable awards={awards} showTender={false} />
         </section>
       )}
+
+      {!isAward && <DossierPanel tenderId={tender.id} onFeedback={matches.reload} />}
 
       <section className="brief">
         <div className="section-head">

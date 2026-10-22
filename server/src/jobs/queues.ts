@@ -9,7 +9,7 @@ import { publishTo } from '../events';
 export const JOBS_STREAM = 'jobs:events';
 export const QUEUE_PREFIX = process.env.QUEUE_PREFIX ?? 'rfp';
 
-export const QUEUE_NAMES = { tedImport: 'ted-import', research: 'research' } as const;
+export const QUEUE_NAMES = { tedImport: 'ted-import', research: 'research', autopilot: 'autopilot' } as const;
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 
 export interface TedImportJobData {
@@ -21,6 +21,12 @@ export interface ResearchJobData {
   organisationIds: string[];
   force?: boolean;
 }
+
+/** Autopilot jobs: build one pre-bid dossier, sweep all companies, or backtest predictions. */
+export type AutopilotJobData =
+  | { kind: 'dossier'; companyId: string; tenderId: string }
+  | { kind: 'sweep' }
+  | { kind: 'backtest'; limit?: number };
 
 export interface JobProgress {
   current: number;
@@ -68,6 +74,21 @@ export const researchQueue = new Queue<ResearchJobData>(QUEUE_NAMES.research, {
   prefix: QUEUE_PREFIX,
   defaultJobOptions,
 });
+
+export const autopilotQueue = new Queue<AutopilotJobData>(QUEUE_NAMES.autopilot, {
+  connection,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions,
+});
+
+/** Queue an autopilot job. Job events only carry the tender id (the stream is shared by all users). */
+export async function enqueueAutopilot(data: AutopilotJobData) {
+  const name = data.kind === 'dossier' ? 'dossier' : data.kind;
+  const job = await autopilotQueue.add(name, data);
+  const publicData = data.kind === 'dossier' ? { tenderId: data.tenderId } : {};
+  await publishJobEvent({ type: 'job.queued', queue: 'autopilot', jobId: job.id!, name, data: publicData });
+  return job.id!;
+}
 
 export async function enqueueTedImport(data: TedImportJobData = {}) {
   const job = await tedImportQueue.add('ted-import', data);

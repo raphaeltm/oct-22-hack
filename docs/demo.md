@@ -23,7 +23,8 @@
 | 1:10–1:40 | **Open a tender.** "Tell me about the first one." | A summary in English with **verbatim French quotes** of the key requirements and award criteria (e.g. *« conformité RGAA »*, *« critère prix 40 % »*), plus a go/no-go view. |
 | 1:40–2:20 | **"Who are we up against?"** | A competitor brief built from real award notices: who won similar contracts from this buyer or under these CPV codes, how often, the contract values, and the incumbent if there is one. |
 | 2:20–2:45 | **"How do we beat <top competitor>?"** | A bid strategy that plays Rivage's differentiators (RGAA, DSFR, sovereign cloud, fixed price) against the competitor's pattern, with concrete points for the *mémoire technique*. |
-| 2:45–3:00 | **Close.** "Two salespeople now have a research team. Every claim traces back to a public TED notice." | Back to the chat, or the pitch slide |
+| 2:45–3:15 | **Open Autopilot.** "Overnight, the agent already did the homework." Open a dossier, then press **Skip… → Buyer we don't work with**. | Dossiers the agent built without being asked: go/no-go verdict, real award-criteria weights from the notice, question and submission deadlines, the buyer's past awards, likely bidders, a checklist and draft questions in French. After the skip, the tender disappears from matches and a "−20: you skipped … because of the buyer" rule appears under *What it learned*. The scorecard shows the backtest (an actual winner in the agent's top 5) against the naive baseline. Read the numbers from the screen; never quote them from memory. |
+| 3:15–3:30 | **Close.** "Two salespeople now have a research team. Every claim traces back to a public TED notice." | Back to the chat, or the pitch slide |
 
 **Backup:** if the live model is slow, have a pre-recorded thread with the same questions ready to show.
 

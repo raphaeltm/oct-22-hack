@@ -7,6 +7,7 @@ import { TenderDetailPage } from './components/TenderDetailPage';
 import { CompetitorsPage } from './components/CompetitorsPage';
 import { CompetitorDetailPage } from './components/CompetitorDetailPage';
 import { CompanyPage } from './components/CompanyPage';
+import { AutopilotPage } from './components/Autopilot';
 import { Landing } from './components/Landing';
 import { LoginPage, RequireAuth } from './Login';
 import { ConsentPage } from './Consent';
@@ -32,6 +33,7 @@ export function App() {
             </RequireAuth>
           }
         >
+          <Route path="autopilot" element={<AutopilotPage />} />
           <Route path="tenders" element={<TendersPage />} />
           <Route path="tenders/:id" element={<TenderDetailPage />} />
           <Route path="competitors" element={<CompetitorsPage />} />

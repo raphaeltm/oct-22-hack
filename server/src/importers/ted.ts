@@ -13,7 +13,6 @@ import { db, pool, runMigrations } from '../db';
 import { awards, organisations, tenders } from '../db/schema';
 
 const SEARCH_URL = 'https://api.ted.europa.eu/v3/notices/search';
-const PAGE_SIZE = 250;
 
 const FIELDS = [
   'publication-number',
@@ -40,7 +39,30 @@ const FIELDS = [
   'tender-value',
   'tender-value-cur',
   'result-value-lot',
+  // Pre-bid dossier (eForms): award criteria, duration/renewals, framework,
+  // procurement documents, bids received, contract conclusion.
+  'procedure-identifier',
+  'procedure-type',
+  'award-criterion-type-lot',
+  'award-criterion-description-lot',
+  'award-criterion-number-lot',
+  'duration-period-value-lot',
+  'duration-period-unit-lot',
+  'contract-duration-end-date-lot',
+  'renewal-maximum-lot',
+  'framework-agreement-lot',
+  'document-url-lot',
+  'submission-url-lot',
+  'deadline-receipt-answers-date-lot',
+  'received-submissions-type-code',
+  'received-submissions-type-val',
+  'contract-conclusion-date',
+  'tender-value-lowest',
+  'tender-value-highest',
 ];
+
+// TED caps (fields + links) x page size at 10,000.
+const PAGE_SIZE = Math.min(250, Math.floor(10_000 / (FIELDS.length + 2)));
 
 type Multilingual = Record<string, string | string[]>;
 type Notice = Record<string, unknown>;
@@ -259,6 +281,7 @@ async function upsertNotice(n: Notice): Promise<number> {
     deadline: noticeType === 'cn-standard' ? deadlineOf(n) : null,
     publicationDate,
     url: `https://ted.europa.eu/en/notice/-/detail/${publicationNumber}`,
+    procedureId: list(n['procedure-identifier'])[0] ?? null,
     raw,
   };
 

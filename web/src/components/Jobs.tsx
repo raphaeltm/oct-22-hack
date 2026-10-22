@@ -79,8 +79,21 @@ export function JobsProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const AUTOPILOT_LABELS: Record<string, string> = {
+  dossier: 'Autopilot: pre-bid dossier',
+  sweep: 'Autopilot: matching new tenders',
+  backtest: 'Autopilot: grading predictions',
+};
+
 function JobToast({ job, onClose }: { job: Job; onClose: () => void }) {
-  const label = job.queue === 'research' ? 'Competitor research' : job.queue === 'ted-import' ? 'TED import' : job.name;
+  const label =
+    job.queue === 'research'
+      ? 'Competitor research'
+      : job.queue === 'ted-import'
+        ? 'TED import'
+        : job.queue === 'autopilot'
+          ? AUTOPILOT_LABELS[job.name] ?? 'Autopilot'
+          : job.name;
   const p = job.progress;
   const pct = p && p.total ? Math.round((p.current / p.total) * 100) : null;
   const message =

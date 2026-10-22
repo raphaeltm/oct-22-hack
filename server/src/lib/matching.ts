@@ -3,6 +3,8 @@ import { Agent } from '@mastra/core/agent';
 import { pool } from '../db';
 import { getCompany, type CompanyRow } from '../mastra/tools/company';
 import { awardIndex } from './competitors';
+import { autopilotForMatches } from './autopilot';
+import { applyRules, learnedForCompany } from './learning';
 import {
   buyerKey,
   cpvLabel,
@@ -73,6 +75,8 @@ export type MatchSignals = {
   buyerSimilarAwards: number;
   buyerLastAward?: { title: string; date: string | null; winners: string[]; url: string | null };
   region?: string;
+  /** Score changes learned from the company's bid/skip/won/lost feedback. */
+  learned?: { delta: number; label: string }[];
 };
 
 export type TenderMatch = {
@@ -162,14 +166,16 @@ const GOOD_SCORE = 40;
  * Score open cn-standard tenders (deadline > now) against the company profile:
  * CPV overlap (weighted by specificity) 45%, French full-text match of profile
  * keywords 35%, buyer history (buyer awarded similar CPV work) 15%, region 5%.
- * If fewer than 5 good open matches exist, recently published notices are added
- * with status 'recent'.
+ * Feedback re-weights those signals and adds per-buyer/CPV/value adjustments;
+ * skipped tenders are dropped. If fewer than 5 good open matches exist, recently
+ * published notices are added with status 'recent'.
  */
 export async function computeMatches(company: CompanyRow, opts: { limit?: number; polish?: boolean } = {}) {
   const limit = Math.min(Math.max(opts.limit ?? 15, 1), 50);
   const keywords = profileKeywords(company);
   const regions = regionTerms(company.regions);
-  const { notices } = await awardIndex();
+  const [{ notices }, learned] = await Promise.all([awardIndex(), learnedForCompany(company.id)]);
+  const w = learned.weights;
 
   // Buyer history: buyers who awarded work similar to the company's CPV codes.
   const buyers = new Map<string, { n: number; last: (typeof notices)[number] }>();
@@ -191,6 +197,7 @@ export async function computeMatches(company: CompanyRow, opts: { limit?: number
     const text = await textSimilarity(keywords, 'websearch', where, { minMatched: 1, saturate: 3, limit: 1000 });
     const out: TenderMatch[] = [];
     for (const t of rows) {
+      if (learned.skipped.has(t.id)) continue;
       const cpv = cpvSim(company.cpvCodes, t.cpvCodes);
       const tx = text.get(t.id);
       if (!cpv.sim && !tx) continue;
@@ -208,7 +215,17 @@ export async function computeMatches(company: CompanyRow, opts: { limit?: number
           : {}),
         ...(region ? { region } : {}),
       };
-      let s = 100 * (0.45 * signals.cpv + 0.35 * signals.text + 0.15 * signals.buyer + 0.05 * (region ? 1 : 0));
+      let s = 100 * (w.cpv * signals.cpv + w.text * signals.text + w.buyer * signals.buyer + w.region * (region ? 1 : 0));
+      const adjustments = applyRules(learned, {
+        buyerName: t.buyerName,
+        cpvCodes: t.cpvCodes,
+        estimatedValue: t.estimatedValue,
+        regionHit: !!region,
+      });
+      if (adjustments.length) {
+        signals.learned = adjustments;
+        s = Math.min(100, Math.max(0, s + adjustments.reduce((a, x) => a + x.delta, 0)));
+      }
       if (status === 'recent') s *= 0.8;
       const m = {
         tenderId: t.id,
@@ -255,7 +272,17 @@ export async function computeMatches(company: CompanyRow, opts: { limit?: number
     );
   }
   notes.push(`Keywords used: ${keywords.join(', ') || '(none)'}. Company CPV codes: ${company.cpvCodes.join(', ') || '(none)'}.`);
+  if (learned.decisions) {
+    notes.push(
+      `Learned from ${learned.decisions} bid/skip decision(s): ${learned.rules.length} adjustment rule(s), ${learned.skipped.size} skipped tender(s) hidden.` +
+        (learned.weightNote ? ` ${learned.weightNote}.` : ''),
+    );
+  }
   const polished = opts.polish === false ? false : await polishRationales(company, matches);
+  for (const m of matches) {
+    const l = m.signals.learned;
+    if (l?.length) m.rationale += ` Feedback: ${l.map((x) => `${x.delta > 0 ? '+' : ''}${x.delta} (${x.label})`).join('; ')}.`;
+  }
   return { matches, notes, polished, keywordQuery: orQuery(keywords) };
 }
 
@@ -270,9 +297,10 @@ export async function refreshMatches(userId: string, opts: { limit?: number; pol
     await client.query('DELETE FROM tender_matches WHERE company_id = $1', [company.id]);
     for (const m of res.matches) {
       await client.query(
-        `INSERT INTO tender_matches (company_id, tender_id, score, rationale) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (company_id, tender_id) DO UPDATE SET score = EXCLUDED.score, rationale = EXCLUDED.rationale, created_at = now()`,
-        [company.id, m.tenderId, m.score, m.rationale],
+        `INSERT INTO tender_matches (company_id, tender_id, score, rationale, signals) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (company_id, tender_id) DO UPDATE
+           SET score = EXCLUDED.score, rationale = EXCLUDED.rationale, signals = EXCLUDED.signals, created_at = now()`,
+        [company.id, m.tenderId, m.score, m.rationale, m.signals],
       );
     }
     await client.query('COMMIT');
@@ -282,7 +310,12 @@ export async function refreshMatches(userId: string, opts: { limit?: number; pol
   } finally {
     client.release();
   }
-  return { companyId: company.id, ...res };
+  // Autopilot: start pre-bid dossiers for the best new matches in the background.
+  const autopilot = await autopilotForMatches(company.id, res.matches).catch((err) => {
+    console.error('[autopilot] failed to queue dossiers', err);
+    return [] as string[];
+  });
+  return { companyId: company.id, ...res, autopilot };
 }
 
 /** Saved matches joined with tenders, best first. */
