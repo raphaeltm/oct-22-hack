@@ -1,4 +1,4 @@
-# Local Postgres for development: npm run db:up
+# Local Postgres + Redis for development: npm run db:up
 services:
   db:
     image: postgres:17-alpine
@@ -8,3 +8,8 @@ services:
       POSTGRES_DB: app
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"

@@ -5,7 +5,7 @@ Agents watch EU public tender feeds (TED) and national portals, match them again
 
 ## App skeleton
 
-Skeleton agent app: **Mastra** agent with **Postgres**-backed memory, a **Hono** API, and a **Vite/React** chat UI.
+Skeleton agent app: **Mastra** agent with **Postgres**-backed memory, a **Hono** API, **Redis** Streams for realtime events, and a **Vite/React** chat UI.
 
 ```
 server/   Hono API + Mastra agent (src/mastra)
@@ -16,7 +16,7 @@ web/      Vite + React chat UI
 
 ```sh
 npm install
-npm run db:up            # local Postgres via docker-compose.dev.yml
+npm run db:up            # local Postgres + Redis via docker-compose.dev.yml
 cp .env.example .env     # set ANTHROPIC_API_KEY
 export $(cat .env | xargs) && npm run dev
 ```
@@ -27,10 +27,13 @@ Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
 ### API
 
 - `GET  /api/health`
-- `POST /api/chat` `{ threadId, message }` → streamed text
-- `GET  /api/threads/:threadId/messages`
+- `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`; output arrives on the event stream
+- `GET  /api/threads/:threadId/messages` — persisted history (Postgres via Mastra memory)
+- `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
+  Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
+  Resumes via `Last-Event-ID` or `?since=<stream id>` (`0` replays everything retained).
 
 ### Deploy
 
-`docker-compose.yml` is the production stack (app + Postgres), deployed with SAM `build_and_publish` to the `staging` environment.
+`docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
 Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).

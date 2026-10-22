@@ -19,10 +19,48 @@ export function App() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let source: EventSource | undefined;
+    let closed = false;
+
+    const upsert = (id: string, role: Message['role'], update: (content: string) => string) =>
+      setMessages((m) =>
+        m.some((msg) => msg.id === id)
+          ? m.map((msg) => (msg.id === id ? { ...msg, content: update(msg.content) } : msg))
+          : [...m, { id, role, content: update('') }],
+      );
+
+    // Load persisted history, then follow live events for this thread.
     fetch(`/api/threads/${threadId}/messages`)
       .then((r) => r.json())
       .then((data) => setMessages(data.messages ?? []))
-      .catch(() => setMessages([]));
+      .catch(() => setMessages([]))
+      .finally(() => {
+        if (closed) return;
+        source = new EventSource(`/api/threads/${threadId}/events`);
+        source.addEventListener('user.message', (e) => {
+          const ev = JSON.parse(e.data);
+          upsert(ev.messageId, 'user', () => ev.content);
+        });
+        source.addEventListener('run.started', (e) => {
+          upsert(JSON.parse(e.data).runId, 'assistant', (c) => c);
+          setBusy(true);
+        });
+        source.addEventListener('text.delta', (e) => {
+          const ev = JSON.parse(e.data);
+          upsert(ev.runId, 'assistant', (c) => c + ev.delta);
+        });
+        source.addEventListener('run.finished', () => setBusy(false));
+        source.addEventListener('run.error', (e) => {
+          const ev = JSON.parse(e.data);
+          upsert(ev.runId, 'assistant', (c) => `${c}\n[error: ${ev.error}]`);
+          setBusy(false);
+        });
+      });
+
+    return () => {
+      closed = true;
+      source?.close();
+    };
   }, [threadId]);
 
   useEffect(() => {
@@ -36,31 +74,21 @@ export function App() {
     setInput('');
     setBusy(true);
 
-    const assistantId = crypto.randomUUID();
-    setMessages((m) => [
-      ...m,
-      { id: crypto.randomUUID(), role: 'user', content: text },
-      { id: assistantId, role: 'assistant', content: '' },
-    ]);
-    const append = (chunk: string) =>
-      setMessages((m) => m.map((msg) => (msg.id === assistantId ? { ...msg, content: msg.content + chunk } : msg)));
+    const messageId = crypto.randomUUID();
+    setMessages((m) => [...m, { id: messageId, role: 'user', content: text }]);
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threadId, message: text }),
+        body: JSON.stringify({ threadId, message: text, messageId }),
       });
-      if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
-      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        append(value);
-      }
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
     } catch (err) {
-      append(`\n[error: ${(err as Error).message}]`);
-    } finally {
+      setMessages((m) => [
+        ...m,
+        { id: crypto.randomUUID(), role: 'assistant', content: `[error: ${(err as Error).message}]` },
+      ]);
       setBusy(false);
     }
   }
