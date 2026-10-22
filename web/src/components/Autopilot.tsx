@@ -122,7 +122,7 @@ function InboxRow({ d }: { d: InboxItem }) {
           <div className="tender-meta">
             <span><Icon name="building" size={14} /> {d.buyerName ?? 'Unknown buyer'}</span>
             {d.estimatedValue ? <span>{formatEur(d.estimatedValue, true)}</span> : null}
-            {d.incumbent && <span>Last similar award: {d.incumbent}</span>}
+            {d.lastSimilarWinner && <span>Last similar award: {d.lastSimilarWinner}</span>}
             {d.criteria > 0 && <span>{d.criteria} award criteria</span>}
           </div>
           <div className="tender-foot">
