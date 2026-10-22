@@ -7,6 +7,7 @@ import { auth, requireAuth, runAuthMigrations, sessionMiddleware, type AuthVaria
 import { db, runMigrations, schema } from './db';
 import { publish, redis, subscribe } from './events';
 import { mastra, memory } from './mastra';
+import { userRequestContext } from './mastra/context';
 
 const hasModelKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
@@ -95,6 +96,7 @@ async function runAgent(threadId: string, resourceId: string, runId: string, mes
       const agent = mastra.getAgent('assistant');
       const result = await agent.stream(message, {
         memory: { thread: threadId, resource: resourceId },
+        requestContext: userRequestContext(resourceId),
       });
       for await (const delta of result.textStream) {
         await publish(threadId, { type: 'text.delta', runId, delta });

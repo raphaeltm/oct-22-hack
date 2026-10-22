@@ -7,7 +7,8 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx -e \"import('./src/db/index.ts').then(async (m) => { await m.runMigrations(); await m.pool.end(); })\""
+    "db:migrate": "tsx -e \"import('./src/db/index.ts').then(async (m) => { await m.runMigrations(); await m.pool.end(); })\"",
+    "seed:demo": "tsx src/seed/demo.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",

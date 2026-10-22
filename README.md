@@ -87,6 +87,17 @@ Env: `BETTER_AUTH_SECRET` (set a long random value in prod) and `BETTER_AUTH_URL
 Every `/api/*` route except `/api/health` and `/api/auth/*` requires a session cookie (401 otherwise);
 handlers read the user with `c.get('user')`. Mastra memory uses the user id as `resourceId`.
 
+### Demo data
+
+`npm run seed:demo` runs migrations, creates the demo user and seeds the fictional **Rivage Numérique** company profile (idempotent, so it's safe to rerun).
+Log in with **`demo@rivage-numerique.fr` / `rivage-demo-2026`** (override with `DEMO_EMAIL` / `DEMO_PASSWORD`).
+The demo script and pitch notes are in [docs/demo.md](docs/demo.md).
+
+### Agent tools
+
+The agent's tools live in `server/src/mastra/tools/*.ts`. Each file exports a group (e.g. `companyTools`), and `tools/index.ts` spreads every group into the agent.
+Tools get the current user with `getUserId(requestContext)` from `server/src/mastra/context.ts`. `runAgent` passes `requestContext: userRequestContext(userId)` to `agent.stream`.
+
 ### API
 
 - `GET  /api/health` (public)
