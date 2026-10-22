@@ -1,6 +1,4 @@
-# oct-22-hack
-
-# oct-22-hack
+# Procurement Radar
 
 ## Idea: Procurement Radar for SMEs
 
@@ -93,37 +91,8 @@ Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
 Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).
 
-## App skeleton
+## Demo readiness
 
-Skeleton agent app: **Mastra** agent with **Postgres**-backed memory, a **Hono** API, **Redis** Streams for realtime events, and a **Vite/React** chat UI.
+Run `npm ci` then `npm run check` for frontend/server type checks and a production UI build. Docker reuses the dependency layer until a workspace manifest or lockfile changes, and removes development dependencies from the final image.
 
-```
-server/   Hono API + Mastra agent (src/mastra)
-web/      Vite + React chat UI
-```
-
-### Local dev
-
-```sh
-npm install
-npm run db:up            # local Postgres + Redis via docker-compose.dev.yml
-cp .env.example .env     # set ANTHROPIC_API_KEY
-export $(cat .env | xargs) && npm run dev
-```
-
-Web runs on http://localhost:5173 and proxies `/api` to the server on :3000.
-Without `ANTHROPIC_API_KEY` the chat endpoint returns a stub reply.
-
-### API
-
-- `GET  /api/health`
-- `POST /api/chat` `{ threadId, message, messageId? }` → `202 { runId }`; output arrives on the event stream
-- `GET  /api/threads/:threadId/messages` — persisted history (Postgres via Mastra memory)
-- `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
-  Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
-  Resumes via `Last-Event-ID` or `?since=<stream id>` (`0` replays everything retained).
-
-### Deploy
-
-`docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD` (secrets), `MODEL` (variable).
+This checkout currently provides the research conversation shell, not live tender ingestion or competitor search. Suggested prompts collect company details and plan research; they do not claim to have searched TED. With no model key, responses explicitly report the missing configuration. Use a configured model and running Postgres/Redis for a live walkthrough.
