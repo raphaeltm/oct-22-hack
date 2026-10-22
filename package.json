@@ -6,6 +6,7 @@
     "dev": "npm run dev -w server & npm run dev -w web",
     "build": "npm run build -w web",
     "start": "npm run start -w server",
+    "import:ted": "npm run import:ted -w server --",
     "db:up": "docker compose -f docker-compose.dev.yml up -d",
     "seed:demo": "npm run seed:demo -w server"
   }

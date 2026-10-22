@@ -8,6 +8,7 @@ import { db, runMigrations, schema } from './db';
 import { publish, redis, subscribe } from './events';
 import { mastra, memory } from './mastra';
 import { userRequestContext } from './mastra/context';
+import { data } from './routes/data';
 
 const hasModelKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
@@ -43,6 +44,9 @@ async function threadAccess(threadId: string, userId: string) {
   if (!thread) return 'missing' as const;
   return thread.resourceId === userId ? ('owned' as const) : ('forbidden' as const);
 }
+
+// Read-only TED data (tenders, competitors); behind the auth middleware above.
+app.route('/api', data);
 
 app.get('/api/threads/:threadId/messages', async (c) => {
   const threadId = c.req.param('threadId');
