@@ -4,6 +4,13 @@
 
 Built for the 2026-10-22 hackathon. The challenge is to build a product where agents depend on data to deliver value for a specific user. The research behind the idea is in [ideas.md](ideas.md).
 
+## Working with agents
+
+[AGENTS.md](AGENTS.md) is the canonical steering guide; [CLAUDE.md](CLAUDE.md) imports it.
+Read the [issue-to-dev release workflow](docs/agent-workflow.md) before merging.
+Agents must deploy merged main changes to the confirmed dev environment and verify
+the release. See [steering evidence](docs/steering-notes.md) for decisions and sources.
+
 ## The product
 
 **Who it's for:** small French/EU IT and AI consultancies (5–50 people) selling to the public sector. They miss relevant notices, spend days reading specifications, and struggle to judge which bids they could win. Starting with CPV division 72 (IT services) keeps the demo focused.
@@ -123,11 +130,11 @@ The product flow above is the target; unchecked items below are still planned.
 - [x] BetterAuth email/password login and session-protected API
 - [x] Redis Streams event log with SSE realtime updates
 - [x] Drizzle schema and migrations: tenders, companies, organisations, awards, research notes and tender matches
-- [ ] RFP importer: load a sample dataset from one public source into `tenders`
-- [ ] Agent tool: save and update the company profile from chat
-- [ ] Agent tool: search and filter imported tenders, and match them to the profile
+- [x] RFP importer: load a sample dataset from one public source into `tenders`
+- [x] Agent tool: save and update the company profile from chat
+- [x] Agent tool: search and filter imported tenders, and match them to the profile
 - [x] Background jobs: Keenable competitor research, with results saved to Postgres
-- [ ] UI: tender list and competitor brief view alongside the chat
+- [x] UI: tender list and competitor brief view alongside the chat
 - [x] Demo script and a seeded demo company
 
 ## Demo checklist
@@ -140,7 +147,11 @@ The product flow above is the target; unchecked items below are still planned.
 
 ## Deploy
 
-`docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
+`docker-compose.yml` defines the deployable stack (app + Postgres + Redis). Agents
+deploy through SAM `build_and_publish` after merging to main, following the
+[release runbook](docs/agent-workflow.md). Discover the user-confirmed dev target
+with `list_deployment_environments`; historical deployments used `staging`, which
+must not be assumed to mean dev. Missing access is a release blocker.
 Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `KEENABLE_API_KEY` are secrets; `MODEL` and `BETTER_AUTH_URL` are variables.
 
 ## Validation
