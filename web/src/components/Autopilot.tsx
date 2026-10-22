@@ -178,7 +178,10 @@ function ScorecardCard({ card }: { card: Scorecard }) {
   return (
     <section className="card">
       <h2 className="section-title">Prediction scorecard</h2>
-      <p className="muted small">Is an actual winner among the 5 firms it predicted? Graded against TED award notices.</p>
+      <p className="muted small">
+        Does past award data point to the eventual winner? A hit means an actual winner is among the 5 firms it named, graded against
+        TED award notices. It says nothing about who else bid, or whether you should.
+      </p>
       {bt.graded === 0 ? (
         <p className="muted">The backtest runs after the TED import.</p>
       ) : (
@@ -191,6 +194,11 @@ function ScorecardCard({ card }: { card: Scorecard }) {
             </div>
           ))}
         </div>
+      )}
+      {bt.graded > 0 && (
+        <p className="small muted">
+          Same {bt.graded} past tenders for both; the agent named firms for {bt.predicted}, the baseline for {card.baseline.predicted} (no prediction counts as a miss).
+        </p>
       )}
       <p className="small">
         <strong>Live:</strong> {live.predicted} tender{live.predicted === 1 ? '' : 's'} predicted, {live.graded} graded
