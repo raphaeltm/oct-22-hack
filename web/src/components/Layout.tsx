@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { signOut, useSession } from '../auth';
 import { api } from '../api';
 import { useChat } from './ChatContext';
@@ -44,6 +44,7 @@ export function Layout() {
 
 function Sidebar() {
   const { data: session } = useSession();
+  const navigate = useNavigate();
   const me = useApi(() => api.me(), []);
   const companyName = me.data?.company?.name;
   const email = session?.user.email ?? me.data?.user?.email ?? '';
@@ -89,7 +90,10 @@ function Sidebar() {
           </div>
         )}
         {session && (
-          <button type="button" className="signout-btn" onClick={() => signOut()}>
+          <button type="button" className="signout-btn" onClick={() => {
+              navigate('/');
+              void signOut();
+            }}>
             Sign out
           </button>
         )}
