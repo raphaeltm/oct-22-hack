@@ -317,8 +317,8 @@ function buildSlides(): SlideDef[] {
             </div>
           </div>
           <p className="hk-statement">
-            Others alert you to tenders or draft your answer. <em>Radar tells you whether to bid, against whom, and learns
-            from the outcome.</em>
+            Others alert you to tenders or draft your answer. <em>Radar tells you whether to bid, against whom, who to team
+            up with, and learns from the outcome.</em>
           </p>
         </div>
       ),
@@ -389,6 +389,64 @@ function buildSlides(): SlideDef[] {
       ),
     },
     {
+      id: 'edge',
+      title: 'Mentor feedback: “no edge”',
+      tags: ['C1', 'C3', 'C5'],
+      labels: ['planned'],
+      notes:
+        'A mentor told us we had no edge. Our answer comes from the data: French buyers let SMEs bid together as a groupement, and TED records those groups. The partner finder is being designed now; the count on this slide is real, the feature is not built yet.',
+      body: (
+        <div className="hk-split hk-split-wide">
+          <div>
+            <p className="hk-kicker">Feedback at 12:30</p>
+            <h2 tabIndex={-1}>
+              “You have no edge.” <em>So we looked for one only French data gives.</em>
+            </h2>
+            <p className="hk-lede">
+              A small agency often can't cover a whole tender alone. French public procurement lets SMEs bid together as a
+              <i> groupement</i> (co-traitance), and TED award notices record who teamed up with whom. Today we flatten those
+              groups into plain winners and throw the signal away.
+            </p>
+            <div className="hk-stats hk-stats-row">
+              <Stat value="155" label="French IT award notices since 2025 with a multi-company bidder" />
+              <Stat value={fmt(SNAPSHOT.awardNotices)} label="award notices checked" />
+            </div>
+            <p className="hk-foot">
+              Counted from TED's API at 12:35 UTC: a bidding party with more member companies than party names (a heuristic;
+              some may be subcontracting). Examples:{' '}
+              <a href={TED('17241-2025')} target="_blank" rel="noreferrer">17241-2025</a> “GRP KSHUTTLE” = Deloitte Conseil + KSHUTTLE
+              for SNCF;{' '}
+              <a href={TED('4575-2025')} target="_blank" rel="noreferrer">4575-2025</a> ENGIT + MEJA (co-traitance) for the
+              Bouches-du-Rhône département.
+            </p>
+          </div>
+          <div className="hk-card">
+            <p className="hk-kicker">Partner finder (designing now, not built)</p>
+            <ol className="hk-steps">
+              <li>
+                <b>Find:</b> for a tender, rank firms that fill your gaps, have bid jointly before, know this buyer and don't
+                compete with you. Every signal links to its notice.
+              </li>
+              <li>
+                <b>Reach out:</b> the agent drafts a formal French proposal citing the tender and the partner's own wins.{' '}
+                <i>You</i> send it; Radar never emails anyone on its own.
+              </li>
+              <li>
+                <b>Score the reply:</b> interest, role, capacity, references. Reply text is treated as untrusted input.
+              </li>
+              <li>
+                <b>Grow:</b> the reply page invites the partner to claim their profile and get their own radar.
+              </li>
+            </ol>
+            <p className="hk-callout">
+              Why it's hard to copy: who answers, how fast and with which references is data nobody can scrape. Every
+              invite is also a new user.
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
       id: 'timeline',
       title: 'How we built it in one morning',
       tags: ['C5'],
@@ -409,9 +467,9 @@ function buildSlides(): SlideDef[] {
             ))}
           </div>
           <div className="hk-stats hk-stats-row">
-            <Stat value="~3h40" label="first commit 08:08 → last merge 11:50 UTC" />
-            <Stat value="30" label="commits on main" />
-            <Stat value="12" label="pull requests merged" />
+            <Stat value="~4h20" label="first commit 08:08 → last merge 12:30 UTC" />
+            <Stat value="36" label="commits on main" />
+            <Stat value="18" label="pull requests merged" />
             <Stat value="25" label="agent sessions (SAM), many in parallel" />
             <Stat value="3" label="people: one steering the agents, two filing issues and reviewing" />
           </div>
@@ -763,7 +821,7 @@ function buildSlides(): SlideDef[] {
           <h2 tabIndex={-1}>
             What we'd build <em>next.</em>
           </h2>
-          <div className="hk-grid3">
+          <div className="hk-grid3 hk-grid4">
             {ROADMAP.map((r) => (
               <div className="hk-card" key={r.h}>
                 <p className="hk-kicker">{r.when}</p>
@@ -828,7 +886,8 @@ const TIMELINE = [
   { t: '10:23', e: 'Browser user test on dev finds bad matches, wrong deadlines, noisy research. Fixed.' },
   { t: '10:45', e: '“Lots of competitors. What makes us unique?” → Autopilot: autonomy + learning.' },
   { t: '11:21', e: 'Autopilot ships; MCP server with OAuth; scorecard made fair (same tenders for both).' },
-  { t: '11:50', e: 'Landing page redesign merged. Teammates still filing issues for the next round.' },
+  { t: '12:07', e: 'Teammates\' issues ship: deadline sort, richer company page, read time, a one-minute homepage film.' },
+  { t: '12:30', e: 'A mentor says “you have no edge”. Brainstorm what only French data allows → partner finder.' },
 ];
 
 const DECISIONS: [string, string, string][] = [
@@ -906,6 +965,11 @@ const STATUS = {
 };
 
 const ROADMAP = [
+  {
+    when: 'Designing now',
+    h: 'Partner finder',
+    items: ['Import TED joint-bid groups (group → members, lead)', 'Score partners per tender; agent drafts the French outreach, you send it', 'Score replies; invite → claim profile → network effect'],
+  },
   {
     when: 'Next week',
     h: 'Meet the challenge rules',
