@@ -130,7 +130,7 @@ class HttpError extends Error {
   }
 }
 
-/** Session expired or missing: clear it so <AuthGate> renders the login page. */
+/** Session expired or missing: clear it so <RequireAuth> redirects to the login page. */
 function onUnauthorized() {
   signOut().catch(() => {});
 }

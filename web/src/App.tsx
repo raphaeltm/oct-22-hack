@@ -7,25 +7,37 @@ import { TenderDetailPage } from './components/TenderDetailPage';
 import { CompetitorsPage } from './components/CompetitorsPage';
 import { CompetitorDetailPage } from './components/CompetitorDetailPage';
 import { CompanyPage } from './components/CompanyPage';
+import { Landing } from './components/Landing';
+import { LoginPage, RequireAuth } from './Login';
 
 export function App() {
   return (
     <BrowserRouter>
-      <JobsProvider>
-        <ChatProvider>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<Navigate to="/tenders" replace />} />
-              <Route path="tenders" element={<TendersPage />} />
-              <Route path="tenders/:id" element={<TenderDetailPage />} />
-              <Route path="competitors" element={<CompetitorsPage />} />
-              <Route path="competitors/:id" element={<CompetitorDetailPage />} />
-              <Route path="company" element={<CompanyPage />} />
-              <Route path="*" element={<Navigate to="/tenders" replace />} />
-            </Route>
-          </Routes>
-        </ChatProvider>
-      </JobsProvider>
+      <Routes>
+        {/* Public */}
+        <Route index element={<Landing />} />
+        <Route path="login" element={<LoginPage />} />
+
+        {/* Signed-in workspace */}
+        <Route
+          element={
+            <RequireAuth>
+              <JobsProvider>
+                <ChatProvider>
+                  <Layout />
+                </ChatProvider>
+              </JobsProvider>
+            </RequireAuth>
+          }
+        >
+          <Route path="tenders" element={<TendersPage />} />
+          <Route path="tenders/:id" element={<TenderDetailPage />} />
+          <Route path="competitors" element={<CompetitorsPage />} />
+          <Route path="competitors/:id" element={<CompetitorDetailPage />} />
+          <Route path="company" element={<CompanyPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }

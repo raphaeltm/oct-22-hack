@@ -1,11 +1,21 @@
 import { FormEvent, ReactNode, useState } from 'react';
-import { signIn, signOut, signUp, useSession } from './auth';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router';
+import { signIn, signUp, useSession } from './auth';
 
-export function Login() {
+// Public credentials for the seeded, fictional Rivage Numérique demo account
+// (see README "Demo data"). Only works where SEED_DEMO=1 created the account.
+const DEMO = { email: 'demo@rivage-numerique.fr', password: 'rivage-demo-2026' };
+
+/** Only allow same-app redirects after login. */
+function safeNext(next: string | null) {
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/tenders';
+}
+
+export function Login({ demo = false }: { demo?: boolean }) {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(demo ? DEMO.email : '');
+  const [password, setPassword] = useState(demo ? DEMO.password : '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const isSignUp = mode === 'sign-up';
@@ -23,8 +33,26 @@ export function Login() {
 
   return (
     <div className="auth">
+      <Link to="/" className="auth-brand" aria-label="Radar home">
+        <span className="brand-icon">◈</span>
+        <span className="brand-name">radar<span className="brand-dot">.</span></span>
+      </Link>
       <form className="auth-card" onSubmit={submit}>
         <h1>{isSignUp ? 'Create your account' : 'Sign in'}</h1>
+        {!isSignUp && (
+          <button
+            type="button"
+            className="auth-demo"
+            onClick={() => {
+              setEmail(DEMO.email);
+              setPassword(DEMO.password);
+              setError(null);
+            }}
+          >
+            <strong>Use the demo account</strong>
+            <span>Rivage Numérique, a fictional Lyon digital agency</span>
+          </button>
+        )}
         {isSignUp && (
           <label>
             Name
@@ -39,7 +67,7 @@ export function Login() {
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             required
-            autoFocus
+            autoFocus={!demo}
           />
         </label>
         <label>
@@ -75,24 +103,20 @@ export function Login() {
   );
 }
 
-/** Shows the login page until there is a session, then renders children. */
-export function AuthGate({ children }: { children: ReactNode }) {
+/** /login: shows the form until there is a session, then goes to `?next=` (or the workspace). */
+export function LoginPage() {
   const { data, isPending } = useSession();
+  const [params] = useSearchParams();
   if (isPending) return <p className="empty">Loading…</p>;
-  if (!data) return <Login />;
-  return <>{children}</>;
+  if (data) return <Navigate to={safeNext(params.get('next'))} replace />;
+  return <Login demo={params.get('demo') === '1'} />;
 }
 
-/** Small fixed control showing the signed-in email and a sign-out link. */
-export function SignOutButton() {
-  const { data } = useSession();
-  if (!data) return null;
-  return (
-    <div className="signout">
-      <span>{data.user.email}</span>
-      <button type="button" className="link" onClick={() => signOut()}>
-        Sign out
-      </button>
-    </div>
-  );
+/** Redirects to /login (remembering the current path) until there is a session. */
+export function RequireAuth({ children }: { children: ReactNode }) {
+  const { data, isPending } = useSession();
+  const { pathname, search } = useLocation();
+  if (isPending) return <p className="empty">Loading…</p>;
+  if (!data) return <Navigate to={`/login?next=${encodeURIComponent(pathname + search)}`} replace />;
+  return <>{children}</>;
 }
