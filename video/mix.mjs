@@ -23,12 +23,12 @@ const lufs = (f) => {
 const sfx = (n) => join(ROOT, 'audio/sfx', `${n}.mp3`);
 const events = [];
 const TICK = -33, WHOOSH = -31;
+events.push([sfx('tick'), S.hook.start + 0.4, TICK]);
 events.push([sfx('riser'), S.reveal.start + 0.35 - 2.5, -27]);
 events.push([sfx('ping'), S.reveal.start + 0.3, -24]);
-for (const id of ['profile', 'matches', 'rivals', 'auto', 'receipts', 'cta']) events.push([sfx('whoosh'), S[id].start - 0.45, WHOOSH]);
-events.push([sfx('tick'), S.profile.start + 3.65, TICK]);
-for (let i = 0; i < 4; i++) events.push([sfx('tick'), S.matches.start + 0.2 + i * 0.24, TICK - 2]);
-for (let i = 0; i < 3; i++) events.push([sfx('tick'), S.rivals.start + 0.75 + i * 0.45, TICK - 2]);
+for (const id of ['gap', 'partners', 'outreach', 'replies', 'receipts', 'cta']) events.push([sfx('whoosh'), S[id].start - 0.45, WHOOSH]);
+for (let i = 0; i < 3; i++) events.push([sfx('tick'), S.insight.start + 0.55 + i * 0.22, TICK - 2]);
+for (let i = 0; i < 3; i++) events.push([sfx('tick'), S.partners.start + 0.3 + i * 0.22, TICK - 2]);
 events.push([sfx('ping'), S.cta.start + 0.25, -26]);
 
 const inputs = [];
@@ -84,7 +84,7 @@ scenes.forEach((s, i) => {
   const w = words[s.vo]?.words ?? [];
   const a = s.voStart + (w[0]?.[1] ?? 0);
   const b = s.voStart + (w.at(-1)?.[2] ?? s.voDur) + 0.4;
-  vtt += `${i + 1}\n${ts(a)} --> ${ts(Math.min(b, s.end))}\n${lines[s.vo].replace('…', ',')}\n\n`;
+  vtt += `${i + 1}\n${ts(a)} --> ${ts(Math.min(b, s.end))}\n${lines[s.vo].replace('…', ',').replace(/[«»]\s?|\s?»/g, '').replace(/\s+,/g, ',')}\n\n`;
 });
 writeFileSync(join(WEB, 'radar-film.vtt'), vtt);
 console.log(`wrote ${mp4}, poster and captions (${total.toFixed(2)} s)`);

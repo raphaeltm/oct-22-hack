@@ -1,8 +1,12 @@
 // Renders the film for any time t (seconds): window.seek(t). Nothing animates on
 // its own, so render.mjs can step frame by frame and get identical output.
 //
-// Every tender, award, rival and figure below is copied from
-// web/src/components/Landing.tsx (TED records, dev snapshot 22 Oct 2026).
+// Facts: every record below is real. Paris Habitat's match, gaps, partners and
+// the invite draft come from the live partner finder on dev (demo company, 22 Oct
+// 2026, 13:05 UTC); the draft is the output of server/src/lib/invites.ts
+// draftEmail() for that partner. The groupement notices were checked against
+// TED's search API. The 199 count (of 2,610) uses TED's party-leader flag, as
+// on the landing page (#48). The reply rubric mirrors scoreResponse(); no reply is shown or scored.
 import { buildTimeline } from './timeline.mjs';
 
 const [durations, words] = await Promise.all([
@@ -13,53 +17,42 @@ const TL = buildTimeline(durations);
 const S = Object.fromEntries(TL.scenes.map((s) => [s.id, s]));
 
 // ---------- data ----------
-const NOTICES = [
-  ['661657-2026', "Musée de l'Air et de l'Espace", 'Refonte architecturale, créative et technique du site internet'],
-  ['708553-2026', 'Mairie de Clichy-la-Garenne', 'Refonte du site internet de la Ville de Clichy'],
-  ['725720-2026', 'Saint-Quentin-en-Yvelines', 'Hébergement, maintenance et accessibilité numérique des sites'],
-  ['666267-2026', 'ANSES', "Refonte du socle technique de l'application Salsa"],
-  ['653428-2026', 'Métropole de Lyon', 'Maintenance et évolution du réseau informatique'],
-  ['704928-2026', 'Université de Tours', 'Infrastructure numérique du portail « Bibliothèques virtuelles humanistes »'],
-  ['730783-2026', 'Département du Val de Marne', "Maintenance et prestations complémentaires pour l'Intranet"],
-  ['665766-2026', "Domaine d'O, Montpellier", 'Nouvelle identité graphique et site internet'],
-  ['667222-2026', 'Paris Habitat', "Plateforme de Système d'Information Géographique"],
-  ['654109-2026', 'Agence Française de Développement', 'TMA Verso et autres applications Bonita'],
-  ['702985-2026', 'Économat des Armées', 'Site web, plateforme évènementielle et application mobile du Forum de Paris'],
-  ['233673-2026', "Ministère de l'Éducation nationale", "Tierce maintenance applicative de l'application Oper@"],
+const GROUPS = [
+  { pub: '17241-2025', buyer: 'Société nationale SNCF', a: 'DELOITTE CONSEIL', b: 'KSHUTTLE', kind: 'groupement' },
+  { pub: '4575-2025', buyer: 'Département des Bouches-du-Rhône', a: 'ENGIT', b: 'MEJA', kind: 'co-traitance' },
+  { pub: '9502-2025', buyer: 'Agence de Services et de Paiement', a: 'LATITUDE GEOSYSTEMS', b: 'GEOSERVE', kind: 'groupement' },
 ];
-const PROBLEM = [1, 0, 2, 3, 4]; // indexes into NOTICES; first row is the one we focus on
-const PROFILE_CPV = ['72000000', '72200000', '72413000', '72224000', '79411000', '72212000'];
-const PROFILE_KW = ['RGAA', 'DSFR', 'SecNumCloud', 'accessibilité', 'refonte', 'souverain', 'open data', 'logiciel libre'];
-const MATCHES = [
-  { pub: '661657-2026', buyer: "Musée de l'Air et de l'Espace", fit: 80, bid: true, deadline: '26 Oct 2026',
-    title: 'Refonte architecturale, créative et technique, maintenance et hébergement du site internet',
-    why: 'Website redesign and hosting fits core CPV 72413000 plus accessibility/RGAA expertise; verify incumbent and tight fixed-price fit.' },
-  { pub: '725720-2026', buyer: 'Saint-Quentin-en-Yvelines', fit: 79.7, bid: true, deadline: '17 Nov 2026',
-    title: "Hébergement, maintenance et gestion des sites internet de l'agglomération, accessibilité numérique",
-    why: 'Strong match: website hosting, maintenance and accessibility align with RGAA/DSFR expertise and sovereign cloud offer.' },
-  { pub: '708553-2026', buyer: 'Mairie de Clichy-la-Garenne', fit: 65.6, bid: true, deadline: '23 Nov 2026', value: '€210k est.',
-    title: 'Refonte du site internet de la Ville de Clichy',
-    why: 'Pure website refonte matches core offer; €210k fits fixed-price delivery, but Mairie may favor larger incumbent agencies.' },
-  { pub: '702985-2026', buyer: 'Économat des Armées', fit: 68.5, bid: false, deadline: '23 Oct 2026',
-    title: 'Site web, plateforme évènementielle et application mobile du Forum de Paris pour la Défense et la Stratégie',
-    why: 'Mobile app and event platform scope exceeds small senior team capacity, though CPV matches.' },
+const GROUPEMENT_COUNT = 199; // of 2,610 award notices; TED's party-leader flag marks a multi-member bid
+const GAPS = [
+  { name: 'GIS / géomatique', quote: "…plateforme de Système d'Information Géographique (SIG) en mode SaaS ou hébergé…" },
+  { name: 'Application maintenance (TMA)', quote: '…son exploitation et son maintien en conditions opérationnelles et de sécurité…' },
 ];
-const RIVALS = [
-  { name: 'STRATIS', wins: 3, buyers: 3, value: 417, unit: 'k', last: 'Aug 2026',
-    ex: { pub: '583632-2026', title: 'Refonte du site internet de la Ville de Poitiers', value: '€141k' } },
-  { name: 'NET COM', alias: 'also filed as “NET.COM”', wins: 2, buyers: 2, value: 480, unit: 'k', last: 'Aug 2026',
-    ex: { pub: '560331-2026', title: 'Refonte graphique et technique du site du Groupe Polylogis', value: '€280k' } },
-  { name: 'ADIMEO', wins: 3, buyers: 3, value: 1.8, unit: 'M', last: 'Dec 2025' },
+const PARTNERS = [
+  { name: 'AKKODIS I&S', score: 59, why: 'Joint-bid history on TED (led at least one) · based in Villeurbanne, your region', ev: ['581992-2026', 'Tierce Maintenance Applicative · Agence de l’eau Seine Normandie'] },
+  { name: 'CIRIL GROUP', score: 52, why: 'Covers TMA and GIS on past public awards', ev: ['109064-2026', 'Plateforme centralisatrice · Toulouse Métropole'] },
+  { name: 'NAOMIS', score: 52, why: 'Covers TMA and GIS on past public awards', ev: ['188641-2026', 'Infrastructure SIG · Saint-Brieuc Armor Agglomération'] },
+  { name: 'ATEXO', score: 50, why: 'Covers TMA and GIS on past public awards', ev: ['503524-2026', 'Maintenance de logiciels · Conseil Départemental du Nord'] },
 ];
-const DOSSIER = [
-  'Go / Consider / No-go verdict, with reasons',
-  'Award criteria and weights',
-  'Notice requirements checked against your profile',
-  'Buyer history and bids received',
-  'Likely bidders and value range',
-  'Draft buyer questions in French (never sent)',
+const SUBJECT = "Proposition de groupement – Fourniture, prestations et maintenance d'une plateforme de Système d'Information…";
+const MAIL = `Bonjour,
+
+Je me permets de vous contacter au nom de Rivage Numérique, entreprise du numérique basée à Lyon.
+
+Nous préparons une réponse à la consultation « Fourniture, prestations et maintenance d'une plateforme de Système d'Information Géographique (SIG) en mode SaaS ou hébergé » publiée par Paris Habitat - OPH (avis TED 667222-2026, date limite de remise des offres le 26 octobre 2026).
+
+Pour présenter l’offre la plus complète, nous recherchons un partenaire pour : la tierce maintenance applicative (TMA) et le SIG et la géomatique.
+Vos références sur des marchés publics comparables (« Tierce Maintenance Applicative de l’application de gestion des redevances ARAMIS » pour Agence de l'eau Seine Normandie ; « SUPPORT POUR LES UTILISATEURS DE LA PLATEFORME EDITO » pour MERCATOR OCEAN) nous ont conduits vers AKKODIS I&S.
+
+Nous vous proposerions d’intervenir en tant que cotraitant au sein d’un groupement momentané d’entreprises dont nous serions mandataires.`;
+const RUBRIC = [
+  ['Interest', 'yes, maybe or no', 25],
+  ['Covers the need', 'TMA and GIS named in the reply', 25],
+  ['References', 'checked against their TED awards', 25],
+  ['Identity', 'SIRET checksum and match with TED', 10],
+  ['Speed', 'hours from your email to the reply', 10],
+  ['Completeness', 'contact, email, availability, role', 5],
 ];
-const RECEIPTS = ['661657-2026', '725720-2026', '708553-2026', '583632-2026', '560331-2026', '619988-2026'];
+const RECEIPTS = ['667222-2026', '581992-2026', '188641-2026', '107505-2026', '17241-2025', '4575-2025'];
 const BLIPS = [
   { a: 38, r: 34, label: "Musée de l'Air et de l'Espace", fit: 80 },
   { a: 118, r: 27, label: 'Saint-Quentin-en-Yvelines', fit: 79.7 },
@@ -69,13 +62,15 @@ const BLIPS = [
   { a: 245, r: 18 }, { a: 268, r: 45 }, { a: 330, r: 42 }, { a: 12, r: 20 },
   { a: 190, r: 12 }, { a: 350, r: 26 },
 ];
+const LINKS = [[0, 4], [1, 6], [2, 8], [3, 10], [3, 13]]; // tender ↔ partner pairs in the reveal scope
 // On-screen honesty labels, per scene (AGENTS.md: keep demo facts distinct from evidence).
 const LABELS = {
-  hook: 'Source: TED, EU Publications Office · dev snapshot, 22 Oct 2026',
-  profile: 'Rivage Numérique is a fictional demo company',
-  matches: 'Real TED notices · fit is a heuristic out of 100, not a win probability',
-  rivals: "A past win shows relevant experience. It doesn't prove the company will bid.",
-  auto: 'Backtest on 150 past French IT tenders, 22 Oct 2026 · not a win probability',
+  hook: "Radar's live verdict for the fictional demo company Rivage Numérique · 22 Oct 2026",
+  insight: 'Of 2,610 French IT award notices since 2025 · counted from TED’s party-leader flag, 22 Oct 2026',
+  gap: 'Gaps and quotes from the TED notice, matched against the demo profile',
+  partners: 'Fit is a heuristic for ordering a shortlist, not a probability · a past award is evidence, not proof of interest',
+  outreach: "Radar's draft for this tender and partner · it never sends email on its own",
+  replies: 'Response score is a heuristic for triage, not a guarantee',
 };
 
 // ---------- helpers ----------
@@ -101,6 +96,13 @@ function pop(el, lt, t0, d = 0.5) {
   el.style.transform = `scale(${lerp(0.6, 1, E.back(p))})`;
   return p;
 }
+// Cards centred with translateY(-50%) keep that offset while they rise.
+function riseCentered(el, lt, t0, d = 1.0, dist = 60) {
+  const p = E.expo(P(lt, t0, d));
+  el.style.opacity = p;
+  el.style.transform = `translateY(calc(-50% + ${(1 - p) * dist}px))`;
+  return p;
+}
 const h = (tag, cls, html) => { const el = document.createElement(tag); if (cls) el.className = cls; if (html != null) el.innerHTML = html; return el; };
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -116,86 +118,106 @@ function W(id, word, n = 0, frac = 0.5) {
 }
 
 // ---------- build DOM ----------
-const lanes = [...document.querySelectorAll('.lane')];
-lanes.forEach((lane, li) => {
-  for (let copy = 0; copy < 2; copy++) {
-    for (let i = 0; i < NOTICES.length; i++) {
-      const [pub, buyer, title] = NOTICES[(i * 5 + li * 4) % NOTICES.length];
-      const row = h('div', 'row');
-      row.innerHTML = `<span class="mono">TED ${pub}</span><b>${esc(buyer)}</b><span class="t" lang="fr">${esc(title)}</span>`;
-      lane.appendChild(row);
-    }
-  }
+const groupEls = GROUPS.map((g) => {
+  const el = h('div', 'grp', `
+    <span class="mono">TED ${g.pub}</span>
+    <span class="buyer">${esc(g.buyer)}</span>
+    <div class="pair"><span class="co a">${esc(g.a)}</span><span class="plus">+</span><span class="co b">${esc(g.b)}</span></div>
+    <span class="kind">${g.kind}</span>`);
+  $('grpRow').appendChild(el);
+  return { el, a: el.querySelector('.co.a'), b: el.querySelector('.co.b'), plus: el.querySelector('.plus') };
 });
-const probRows = PROBLEM.map((idx, i) => {
-  const [pub, buyer, title] = NOTICES[idx];
-  const row = h('div', 'row');
-  row.innerHTML = `<span class="mono">${pub}</span><b>${esc(buyer)}</b><span class="t" lang="fr">${esc(title)}</span><span class="tag">${i === 0 ? 'Up against: ?' : 'unread'}</span>`;
-  $('probList').appendChild(row);
-  return row;
+
+const gapEls = GAPS.map((g) => {
+  const el = h('div', 'gap-row missing', `
+    <b>${esc(g.name)}<q lang="fr">${esc(g.quote)}</q></b>
+    <span class="st gap">Gap</span>`);
+  $('gapList').appendChild(el);
+  return { el, st: el.querySelector('.st') };
+});
+
+const pfEls = PARTNERS.slice(0, 3).map((p, i) => {
+  const el = h('div', 'pf', `
+    <div class="pf-top"><span class="rank">#${i + 1}</span><span class="avatar">${esc(p.name.slice(0, 2))}</span><b>${esc(p.name)}</b>
+      <div class="fit"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5"/><circle cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="0 100"/></svg><span>0</span></div></div>
+    <div class="sigs"><span class="sig">Covers: TMA</span><span class="sig">Covers: GIS</span></div>
+    ${i === 0 ? `<p class="pf-why">${esc(p.why)}</p>` : ''}
+    <div class="pf-ev"><span class="mono">TED ${p.ev[0]}</span><span lang="fr">${esc(p.ev[1])}</span></div>`);
+  $('pfList').appendChild(el);
+  return { el, p, sigs: [...el.querySelectorAll('.sig')], ring: el.querySelectorAll('circle')[1], num: el.querySelector('.fit span') };
+});
+
+$('pfList').insertAdjacentHTML('beforeend', `<p class="pf-more">+ ${PARTNERS.length - 3} more · next: ${PARTNERS.slice(3).map((p) => `${esc(p.name)} (${p.score})`).join(', ')}</p>`);
+
+const rubEls = RUBRIC.map(([k, note, max]) => {
+  const el = h('div', 'rub', `<span><b>${k}</b><small>${note}</small></span><i></i><em>/${max}</em>`);
+  $('replyList').appendChild(el);
+  return { el, max, bar: el.querySelector('i') };
+});
+const claim = h('span', 'claim', 'Créer mon radar gratuit →');
+claim.lang = 'fr';
+$('replyList').appendChild(claim);
+
+// network graph: you, the partner, and the partners' own networks
+const SVGNS = 'http://www.w3.org/2000/svg';
+const net = $('net');
+net.setAttribute('viewBox', '0 0 470 700');
+const NODES = [
+  { x: 120, y: 350, r: 16, cls: 'you', label: 'You' },
+  { x: 300, y: 300, r: 13, label: 'Partner' },
+  { x: 420, y: 170, r: 8 }, { x: 440, y: 330, r: 8 }, { x: 380, y: 470, r: 8 },
+  { x: 250, y: 520, r: 7 }, { x: 330, y: 610, r: 6 }, { x: 450, y: 560, r: 6 }, { x: 220, y: 120, r: 7 },
+];
+const EDGES = [[0, 1], [1, 2], [1, 3], [1, 4], [4, 5], [4, 6], [4, 7], [2, 8], [0, 5]];
+const edgeEls = EDGES.map(([a, b]) => {
+  const l = document.createElementNS(SVGNS, 'line');
+  l.setAttribute('x1', NODES[a].x); l.setAttribute('y1', NODES[a].y);
+  l.setAttribute('x2', NODES[b].x); l.setAttribute('y2', NODES[b].y);
+  l.setAttribute('pathLength', '1'); l.setAttribute('stroke-dasharray', '1');
+  net.appendChild(l);
+  return l;
+});
+const nodeEls = NODES.map((n) => {
+  const g = document.createElementNS(SVGNS, 'g');
+  g.innerHTML = `<circle cx="${n.x}" cy="${n.y}" r="${n.r}" class="${n.cls ?? ''}"/>${n.label ? `<text x="${n.x}" y="${n.y + n.r + 24}" text-anchor="middle">${n.label}</text>` : ''}`;
+  g.style.transformOrigin = `${n.x}px ${n.y}px`;
+  net.appendChild(g);
+  return g;
 });
 
 function buildScope(el, quiet) {
   el.innerHTML = '<div class="scope-rings"></div><div class="scope-sweep"></div>';
   const blips = [];
+  let links = [];
   if (!quiet) {
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;overflow:visible';
+    const pos = (b) => { const rad = (b.a * Math.PI) / 180; return [50 + b.r * Math.sin(rad), 50 - b.r * Math.cos(rad)]; };
+    links = LINKS.map(([i, j]) => {
+      const [x1, y1] = pos(BLIPS[i]); const [x2, y2] = pos(BLIPS[j]);
+      const l = document.createElementNS(SVGNS, 'line');
+      Object.entries({ x1, y1, x2, y2, pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }).forEach(([k, v]) => l.setAttribute(k, v));
+      l.style.cssText = 'stroke: rgb(198 243 107 / 0.7); stroke-width: 0.35';
+      svg.appendChild(l);
+      return l;
+    });
+    el.appendChild(svg);
     BLIPS.forEach((b) => {
-      const rad = (b.a * Math.PI) / 180;
+      const [x, y] = pos(b);
       const bl = h('span', `blip ${b.label ? 'major' : ''} ${b.a > 180 ? 'left' : ''}`);
-      bl.style.left = `${50 + b.r * Math.sin(rad)}%`;
-      bl.style.top = `${50 - b.r * Math.cos(rad)}%`;
+      bl.style.left = `${x}%`;
+      bl.style.top = `${y}%`;
       if (b.label) bl.innerHTML = `<span class="blip-label">${esc(b.label)}<i>fit ${b.fit}</i></span>`;
       el.appendChild(bl);
       blips.push({ el: bl, a: b.a, label: bl.firstChild });
     });
     el.appendChild(h('span', 'scope-center', 'You'));
   }
-  return { sweep: el.querySelector('.scope-sweep'), rings: el.querySelector('.scope-rings'), blips };
+  return { sweep: el.querySelector('.scope-sweep'), blips, links };
 }
 const revScope = buildScope($('revScope'), false);
 const ctaScope = buildScope($('ctaScope'), true);
-
-PROFILE_CPV.forEach((c) => $('profCpv').appendChild(h('span', 'chip mono', c)));
-PROFILE_KW.forEach((c) => $('profKw').appendChild(h('span', 'chip', esc(c))));
-const BUBBLE = "We're a 40-person agency in Lyon doing accessible websites, DSFR and sovereign cloud for local authorities.";
-
-const matchEls = MATCHES.map((m) => {
-  const el = h('div', 'match');
-  el.innerHTML = `
-    <div class="fit"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5"/><circle cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="0 100"/></svg><span>0</span></div>
-    <div class="match-body">
-      <div class="match-meta"><span class="verdict ${m.bid ? 'bid' : 'nobid'}">${m.bid ? 'Bid' : 'No-bid'}</span><span>${esc(m.buyer)}</span></div>
-      <b lang="fr">${esc(m.title)}</b>
-      <p>${esc(m.why)}</p>
-      <div class="match-foot"><span>TED ${m.pub}</span><span>Closes ${m.deadline}</span>${m.value ? `<span>${m.value}</span>` : ''}</div>
-    </div>`;
-  $('matchCard').appendChild(el);
-  return { el, m, ring: el.querySelectorAll('circle')[1], num: el.querySelector('.fit span') };
-});
-
-const rivalEls = RIVALS.map((r, i) => {
-  const el = h('div', 'rival');
-  el.innerHTML = `
-    <div class="rival-top">
-      <span class="rank">#${i + 1}</span>
-      <span class="avatar">${r.name.slice(0, 2)}</span>
-      <div><b>${r.name}</b>${r.alias ? `<span class="alias">${esc(r.alias)}<span class="merged">merged</span></span>` : `<span class="alias">Last similar win ${r.last}</span>`}</div>
-      <dl>
-        <div><dt>Similar wins</dt><dd data-k="wins">0</dd></div>
-        <div><dt>Buyers</dt><dd data-k="buyers">0</dd></div>
-        <div><dt>Known value</dt><dd data-k="value">€0</dd></div>
-      </dl>
-    </div>
-    ${r.ex ? `<div class="rival-ex"><span class="mono">TED ${r.ex.pub}</span><span lang="fr">${esc(r.ex.title)}</span><span class="mono">${r.ex.value}</span></div>` : ''}`;
-  $('rivList').appendChild(el);
-  return { el, r, dd: [...el.querySelectorAll('dd')] };
-});
-
-const dossierEls = DOSSIER.map((d) => {
-  const li = h('li', '', `<span class="tick">✓</span><span>${esc(d)}</span>`);
-  $('dossierList').appendChild(li);
-  return li;
-});
 
 const ARROW = '<svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const receiptEls = RECEIPTS.map((p) => {
@@ -209,7 +231,7 @@ const sceneEls = Object.fromEntries(TL.scenes.map((s) => [s.id, $(`s-${s.id}`)])
 const X = 0.28; // half crossfade
 
 function sceneAlpha(s, t) {
-  const inP = s.start === 0 ? 1 : E.inOut(P(t, s.start - X, 2 * X));
+  const inP = s.start === 0 ? E.out(P(t, 0, 0.35)) : E.inOut(P(t, s.start - X, 2 * X));
   const outP = s.id === 'cta' ? 1 : 1 - E.inOut(P(t, s.end - X, 2 * X));
   return Math.min(inP, outP);
 }
@@ -219,7 +241,7 @@ function scope(sc, t, lt, appear) {
   sc.sweep.style.transform = `rotate(${angle}deg)`;
   sc.blips.forEach((b) => {
     const since = (angle - b.a + 360) % 360; // degrees since the sweep passed
-    const seen = lt > (b.a / 72) + appear; // swept at least once since appearing
+    const seen = lt > b.a / 72 + appear;
     const glow = seen ? Math.exp(-since / 70) : 0;
     b.el.style.opacity = seen ? 0.3 + 0.7 * glow : 0;
     b.el.style.boxShadow = `0 0 ${18 * glow}px ${4 * glow}px rgb(198 243 107 / ${0.8 * glow})`;
@@ -229,7 +251,6 @@ function scope(sc, t, lt, appear) {
 
 let labelText = '';
 function render(t) {
-  // background drift
   $('bgGrid').style.transform = `translate(${(t * 6) % 96}px, ${(t * -4) % 96}px)`;
   $('bgGlow').style.transform = `translateX(${Math.sin(t / 9) * 40}px)`;
 
@@ -242,167 +263,123 @@ function render(t) {
     if (a > 0.001) RENDER[s.id](t - s.start, s, t);
   }
 
-  // feed lanes across hook + problem
-  {
-    const end = S.problem.end;
-    const fadeIn = E.out(P(t, 0, 0.6));
-    const fadeOut = 1 - E.inOut(P(t, end - 0.5, 0.8));
-    $('feed').style.opacity = fadeIn * fadeOut;
-    $('feed').style.transform = `scale(${lerp(1, 0.9, E.inOut(P(t, end - 0.5, 0.8)))})`;
-    // distance travelled: fast in the hook, slowing through the problem
-    const v0 = 260, v1 = 26, tS = S.hook.end - 0.8, tE = S.problem.start + 2.2;
-    const dist = (tt) => {
-      if (tt <= tS) return v0 * tt;
-      const k = Math.min(tt, tE) - tS, span = tE - tS;
-      const decel = v0 * k - ((v0 - v1) * k * k) / (2 * span);
-      return v0 * tS + decel + (tt > tE ? v1 * (tt - tE) : 0);
-    };
-    const d = dist(t);
-    lanes.forEach((lane, i) => {
-      const hgt = lane.scrollHeight / 2;
-      const off = ((d * [1, 1.3, 0.85][i] + i * 230) % hgt);
-      lane.style.transform = `translateY(${-off}px)`;
-    });
-    const dim = E.inOut(P(t, S.problem.start, 1.2));
-    $('feedShade').style.background = `radial-gradient(${lerp(48, 70, dim)}% ${lerp(52, 75, dim)}% at 50% 50%, rgb(10 21 16 / 0.96) 30%, rgb(10 21 16 / ${lerp(0.55, 0.85, dim)}) 70%, rgb(10 21 16 / ${lerp(0.2, 0.7, dim)}))`;
-  }
-
-  // logo: appears with the reveal, stays to the end (except under the CTA wordmark-free hold)
+  // logo: appears with the reveal and stays to the end
   const logoA = E.out(P(t, S.reveal.start + 0.3, 0.8));
   $('logo').style.opacity = logoA;
   $('logo').style.transform = `translateY(${(1 - logoA) * -20}px)`;
 
-  // honesty label for the current scene
-  const cur = TL.scenes.find((s) => t >= s.start && t < s.end) ?? TL.scenes[TL.scenes.length - 1];
+  // honesty label for the current scene; consecutive scenes with the same label keep it on screen
+  const i = TL.scenes.findIndex((s) => t >= s.start && t < s.end);
+  const cur = TL.scenes[i < 0 ? TL.scenes.length - 1 : i];
   const txt = LABELS[cur.id] ?? '';
   if (txt && txt !== labelText) { $('label').textContent = txt; labelText = txt; }
-  const lt = t - cur.start;
-  const la = txt ? Math.min(E.out(P(lt, 0.7, 0.6)), 1 - E.inOut(P(t, cur.end - 0.45, 0.4))) : 0;
+  const prev = TL.scenes[TL.scenes.indexOf(cur) - 1];
+  const next = TL.scenes[TL.scenes.indexOf(cur) + 1];
+  const fadeIn = prev && LABELS[prev.id] === txt ? 1 : E.out(P(t - cur.start, 0.6, 0.6));
+  const fadeOut = next && LABELS[next.id] === txt ? 1 : 1 - E.inOut(P(t, cur.end - 0.45, 0.4));
+  const la = txt ? Math.min(fadeIn, fadeOut) : 0;
   $('label').style.opacity = la;
   $('label').style.transform = `translateY(${(1 - la) * 14}px)`;
 }
 
 const RENDER = {
   hook(lt) {
-    const tLand = Math.max(1.6, W('hook', 'seven', 0, 0.55) + 0.25);
-    const p = E.expo(P(lt, 0.15, tLand - 0.15));
-    $('hookNum').textContent = Math.round(6939 * p).toLocaleString('en-US');
-    const bump = P(lt, tLand - 0.1, 0.5);
-    $('hookNum').style.transform = `scale(${1 + 0.05 * Math.sin(Math.PI * bump)})`;
-    $('hookNum').style.opacity = E.out(P(lt, 0, 0.35));
-    rise($('hookSub'), lt, 0.5, 1.0, 40);
+    const cp = E.expo(P(lt, 0.05, 1.0));
+    $('hookCard').style.opacity = cp;
+    $('hookCard').style.transform = `translateY(${(1 - cp) * 50}px)`;
+    const tNo = W('hook', 'weak', 0, 0.5) - 0.1;
+    const vp = P(lt, tNo, 0.5);
+    $('hookVerdict').style.transform = `scale(${1 + 0.35 * Math.sin(Math.PI * vp)})`;
+    $('hookVerdict').style.boxShadow = `0 0 0 ${10 * Math.sin(Math.PI * vp)}px rgb(255 176 138 / ${0.3 * (1 - vp)})`;
+    const tScope = W('hook', 'mapping', 0, 0.75) - 0.2;
+    $('hookHl').style.setProperty('--hl', `${100 * E.inOut(P(lt, tScope, 1.4))}%`);
+    // The headline lands early so the hook works on mute; the voice catches up.
+    rise($('hookHead'), lt, 1.4, 1.0, 50);
   },
-  problem(lt) {
-    rise($('probA'), lt, 0.1, 0.9);
-    const tSo = W('problem', 'so', 0, 0.48) - 0.05;
-    rise($('probB'), lt, tSo, 0.9);
-    probRows.forEach((row, i) => {
-      rise(row, lt, 0.35 + i * 0.09, 0.8, 30);
-      const tag = row.querySelector('.tag');
-      if (i === 0) {
-        const tHot = W('problem', 'blind', 0, 0.75) - 0.15;
-        const hp = E.out(P(lt, tHot, 0.5));
-        row.classList.toggle('hot', hp > 0.02);
-        tag.style.opacity = hp;
-        row.style.transform += ` scale(${1 + 0.02 * hp})`;
-      } else {
-        const tu = 1.1 + (i - 1) * 0.35;
-        const up = E.out(P(lt, tu, 0.5));
-        row.style.opacity = Math.min(parseFloat(row.style.opacity), 1 - 0.68 * up);
-        tag.style.opacity = up;
-      }
+  insight(lt) {
+    rise($('insHead'), lt, 0.1, 1.0);
+    const tTog = W('insight', 'together', 0, 0.4) - 0.2;
+    groupEls.forEach((g, i) => {
+      rise(g.el, lt, 0.5 + i * 0.22, 1.0, 50);
+      const jp = E.back(P(lt, tTog + i * 0.15, 0.8));
+      g.a.style.transform = `translateX(${(1 - jp) * -46}px)`;
+      g.b.style.transform = `translateX(${(1 - jp) * 46}px)`;
+      g.plus.style.opacity = clamp(jp);
+      g.plus.style.transform = `scale(${lerp(0.3, 1, clamp(jp))})`;
     });
+    const tRec = W('insight', 'records', 0, 0.75) - 0.3;
+    rise($('insCount'), lt, tRec, 0.9, 40);
+    $('insNum').textContent = Math.round(GROUPEMENT_COUNT * E.out(P(lt, tRec, 1.4)));
   },
   reveal(lt, s, t) {
     rise($('revEyebrow'), lt, 0.25, 0.9);
     rise($('revL1'), lt, 0.4, 1.0, 60);
-    rise($('revL2'), lt, 0.52, 1.0, 60);
-    rise($('revL3'), lt, W('reveal', 'never', 0, 0.7) - 0.25, 1.0, 60);
+    const tPartners = W('reveal', 'partners', 0, 0.6);
+    rise($('revL3'), lt, tPartners - 0.25, 1.0, 60);
     const p = E.expo(P(lt, 0.1, 1.4));
     $('revScope').style.opacity = p;
     $('revScope').style.transform = `scale(${lerp(0.7, 1, p)}) rotate(${(1 - p) * -30}deg)`;
     scope(revScope, t, lt, 0.5);
+    revScope.links.forEach((l, i) => l.setAttribute('stroke-dashoffset', 1 - E.inOut(P(lt, tPartners + i * 0.18, 0.7))));
   },
-  profile(lt) {
-    rise($('profCopy'), lt, 0.15, 1.0);
-    const cp = E.expo(P(lt, 0.2, 1.0));
-    $('profCard').style.opacity = cp;
-    $('profCard').style.transform = `translateY(calc(-50% + ${(1 - cp) * 60}px))`;
-    const t0 = 0.55, t1 = 2.4;
-    pop($('profBubble'), lt, t0 - 0.2, 0.5);
-    const n = Math.round(BUBBLE.length * clamp((lt - t0) / (t1 - t0)));
-    $('profText').textContent = BUBBLE.slice(0, n);
-    $('profCaret').style.opacity = lt < t1 + 0.2 && Math.floor(lt * 3) % 2 === 0 ? 1 : lt < t1 ? 1 : 0;
-    // agent "typing" dots between the message and the saved profile
-    const typing = $('profTyping');
-    const ty = lt > t1 + 0.1 && lt < t1 + 0.9;
-    typing.style.opacity = ty ? 1 : 0;
-    [...typing.children].forEach((d, i) => { d.style.opacity = 0.35 + 0.65 * Math.max(0, Math.sin((lt * 7) - i * 0.9)); });
-    const pp = $('profProfile');
-    const tp = t1 + 0.9;
-    rise(pp, lt, tp, 0.8, 30);
-    pop($('profCheck'), lt, tp + 0.35, 0.5);
-    [...$('profCpv').children, ...$('profKw').children].forEach((c, i) => pop(c, lt, tp + 0.3 + i * 0.07, 0.45));
-  },
-  matches(lt, s) {
-    const cp = E.expo(P(lt, -0.1, 0.8));
-    $('matchCard').style.opacity = cp;
-    $('matchCard').style.transform = `translateY(calc(-50% + ${(1 - cp) * 60}px))`;
-    rise($('matchCopy'), lt, 0.1, 1.0);
-    const tWalk = W('matches', 'walk', 0, 0.85) - 0.3;
-    matchEls.forEach(({ el, m, ring, num }, i) => {
-      const t0 = 0.15 + i * 0.24;
-      const p = E.expo(P(lt, t0, 0.9));
-      el.style.opacity = p;
-      el.style.transform = `translateX(${(1 - p) * -50}px)`;
-      const fp = E.out(P(lt, t0 + 0.25, 1.4));
-      ring.setAttribute('stroke-dasharray', `${m.fit * fp} 100`);
-      num.textContent = fp >= 1 ? String(m.fit) : String(Math.round(m.fit * fp));
-      if (!m.bid) {
-        const f = E.out(P(lt, tWalk, 0.6));
-        el.classList.toggle('focus', f > 0.02);
-        el.style.transform += ` scale(${1 + 0.015 * f})`;
-      } else {
-        const f = E.out(P(lt, tWalk, 0.6));
-        el.style.opacity = p * (1 - 0.35 * f);
-      }
+  gap(lt) {
+    rise($('gapCopy'), lt, 0.15, 1.0);
+    riseCentered($('gapCard'), lt, 0.2);
+    const tGis = W('gap', 'gis', 0, 0.62) - 0.15;
+    const tTma = W('gap', 'maintenance', 0, 0.8) - 0.35;
+    gapEls.forEach(({ el, st }, i) => {
+      rise(el, lt, 0.6 + i * 0.25, 0.9, 30);
+      const sp = P(lt, i === 0 ? tGis : tTma, 0.5);
+      st.style.opacity = clamp(sp * 3);
+      st.style.transform = `scale(${lerp(0.6, 1, E.back(sp))})`;
     });
   },
-  rivals(lt) {
-    rise($('rivCopy'), lt, 0.15, 1.0);
-    const cp = E.expo(P(lt, 0.2, 1.0));
-    $('rivCard').style.opacity = cp;
-    $('rivCard').style.transform = `translateY(calc(-50% + ${(1 - cp) * 60}px))`;
-    rivalEls.forEach(({ el, r, dd }, i) => {
-      const t0 = 0.7 + i * 0.45;
-      const p = E.expo(P(lt, t0, 0.9));
-      el.style.opacity = p;
-      el.style.transform = `translateY(${(1 - p) * 34}px)`;
-      const cnt = E.out(P(lt, t0 + 0.2, 1.1));
-      dd[0].textContent = Math.round(r.wins * cnt);
-      dd[1].textContent = Math.round(r.buyers * cnt);
-      const v = r.value * cnt;
-      dd[2].textContent = `€${r.unit === 'M' ? v.toFixed(1) : Math.round(v)}${r.unit}`;
+  partners(lt) {
+    riseCentered($('pfCard'), lt, -0.1, 0.9);
+    rise($('pfCopy'), lt, 0.1, 1.0);
+    const tSig = W('partners', 'cover', 0, 0.3) - 0.2;
+    pfEls.forEach(({ el, p, sigs, ring, num }, i) => {
+      const t0 = 0.2 + i * 0.2;
+      const e = E.expo(P(lt, t0, 0.9));
+      el.style.opacity = e;
+      el.style.transform = `translateX(${(1 - e) * -50}px)`;
+      const fp = E.out(P(lt, t0 + 0.2, 1.3));
+      ring.setAttribute('stroke-dasharray', `${p.score * fp} 100`);
+      num.textContent = Math.round(p.score * fp);
+      sigs.forEach((sg, k) => sg.classList.toggle('on', lt >= tSig + i * 0.2 + k * 0.15));
     });
   },
-  auto(lt) {
-    rise($('autoHead'), lt, 0.1, 1.0);
-    rise($('autoDossier'), lt, 0.4, 1.0, 50);
-    rise($('autoBt'), lt, 0.6, 1.0, 50);
-    const tScore = W('auto', 'grades', 0, 0.6) - 0.2;
-    dossierEls.forEach((li, i) => {
-      const td = 1.0 + i * ((tScore - 1.2) / DOSSIER.length);
-      li.classList.toggle('done', lt >= td);
-      const p = P(lt, td, 0.35);
-      li.querySelector('.tick').style.transform = `scale(${lt >= td ? lerp(0.6, 1, E.back(p)) : 1})`;
-      li.style.opacity = 0.45 + 0.55 * E.out(p);
+  outreach(lt) {
+    rise($('outCopy'), lt, 0.15, 1.0);
+    riseCentered($('mailCard'), lt, 0.2);
+    $('mailSubject').textContent = SUBJECT.slice(0, Math.round(SUBJECT.length * E.out(P(lt, 0.5, 0.6))));
+    const t0 = 1.0, t1 = Math.max(t0 + 3, W('outreach', 'send', 0, 0.6) + 0.6);
+    $('mailBody').textContent = MAIL.slice(0, Math.round(MAIL.length * P(lt, t0, t1 - t0)));
+    const sc = $('mailScroll');
+    sc.scrollTop = sc.scrollHeight;
+    const ap = E.expo(P(lt, W('outreach', 'send', 0, 0.6) - 0.2, 0.8));
+    $('mailActions').style.opacity = ap;
+    $('mailActions').style.transform = `translateY(${(1 - ap) * 20}px)`;
+  },
+  replies(lt) {
+    riseCentered($('replyCard'), lt, -0.1, 0.9);
+    rise($('repCopy'), lt, 0.1, 1.0);
+    rubEls.forEach(({ el, bar, max }, i) => {
+      rise(el, lt, 0.3 + i * 0.12, 0.8, 20);
+      bar.style.setProperty('--w', `${(100 * max / 25) * E.out(P(lt, 0.5 + i * 0.12, 0.9))}%`);
     });
-    const bp = E.out(P(lt, tScore, 1.4));
-    $('btA').style.setProperty('--w', `${(17 / 149) * 400 * bp}%`);
-    $('btB').style.setProperty('--w', `${(9 / 150) * 400 * bp}%`);
-    const ratio = 1 + 0.9 * E.out(P(lt, tScore + 0.3, 1.3));
-    $('btNum').textContent = `${ratio.toFixed(1)}×`;
-    $('btNum').style.opacity = E.out(P(lt, tScore, 0.5));
+    const tClaim = W('replies', 'every', 0, 0.6) - 0.2;
+    pop(claim, lt, tClaim, 0.6);
+    nodeEls.forEach((g, i) => {
+      const t0 = i < 2 ? 0.4 + i * 0.3 : tClaim + 0.3 + (i - 2) * 0.16;
+      const p = P(lt, t0, 0.5);
+      g.style.opacity = clamp(p * 3);
+      g.style.transform = `scale(${lerp(0.3, 1, E.back(p))})`;
+    });
+    edgeEls.forEach((l, i) => {
+      const t0 = i === 0 ? 0.8 : tClaim + 0.2 + i * 0.16;
+      l.setAttribute('stroke-dashoffset', 1 - E.inOut(P(lt, t0, 0.6)));
+    });
   },
   receipts(lt) {
     rise($('rcHead'), lt, 0.05, 0.9, 50);
@@ -420,11 +397,12 @@ const RENDER = {
     $('ctaScope').style.transform = `scale(${lerp(0.85, 1, p)})`;
     scope(ctaScope, t, lt, 0);
     rise($('ctaH'), lt, 0.25, 1.1, 70);
-    rise($('ctaP'), lt, W('cta', 'try', 0, 0.55) - 0.2, 0.9);
-    const bp = pop($('ctaBtn'), lt, W('cta', 'try', 0, 0.55), 0.6);
+    const tTry = W('cta', 'try', 0, 0.55);
+    rise($('ctaP'), lt, tTry - 0.2, 0.9);
+    const bp = pop($('ctaBtn'), lt, tTry, 0.6);
     const glow = 0.55 + 0.25 * Math.sin(lt * 3);
     $('ctaBtn').style.boxShadow = `0 20px 70px -12px rgb(198 243 107 / ${bp >= 1 ? glow : 0.55})`;
-    rise($('ctaFoot'), lt, W('cta', 'try', 0, 0.55) + 0.5, 0.9);
+    rise($('ctaFoot'), lt, tTry + 0.5, 0.9);
   },
 };
 

@@ -223,3 +223,157 @@ sits between the ticker and "The problem".
 - [ContentBeta: how to write a product demo script](https://www.contentbeta.com/blog/how-to-write-product-demo-script-examples-template/)
 - [ContentBeta: how to write a 60-second video script](https://www.contentbeta.com/blog/60-second-video-script/)
 - [Pexo: kinetic typography explainer](https://pexo.ai/tutorial/how-to-make-a-kinetic-typography-explainer-video)
+
+---
+
+# Version 2: joint bids (22 Oct 2026, afternoon)
+
+**Why:** a hackathon mentor said Radar had "no edge". The answer was data that
+only France offers. French buyers let SMEs bid together as a *groupement*
+(co-traitance), and TED award notices record who teamed up with whom. The
+product focus is moving to a **partner finder**: find partners for a tender,
+reach out, score the replies, and grow the network. The homepage messaging is
+moving the same way, so the film follows.
+
+**Truth constraints for v2:**
+
+- These facts are **real** and may be shown as fact:
+  - Radar's No-bid on Économat des Armées (TED 702985-2026): "Mobile app and
+    event platform scope exceeds small senior team capacity, though CPV matches."
+  - The groupement examples, checked against TED's API on 22 Oct 2026:
+    - 17241-2025: SNCF, Deloitte Conseil + KSHUTTLE.
+    - 4575-2025: Bouches-du-Rhône, ENGIT + MEJA ("co-traitance ENGIT").
+    - 9502-2025: ASP, LATITUDE GEOSYSTEMS + GEOSERVE B.V.
+  - The **155** French IT award notices since 2025 with a multi-company bidder.
+    This is a heuristic count, and some may be subcontracting.
+- The **partner finder is not built yet.** Ranking, outreach and reply scoring
+  appear under a visible "Preview · in development" label, with no invented
+  partner names or scores. Once the feature ships, its real output replaces the
+  preview.
+- The old film's backtest (17/149, 1.9×) is out of date (now 18/151 vs 9/151),
+  and the beat is off-topic, so it's cut.
+
+## J-iteration 1 (rejected)
+
+Take the old film and add a "find partners" scene after the competitors scene.
+
+- ❌ Joint bids become feature number six, but they are now *the* point. The
+  story has to be built around them.
+- ❌ The hook (6,939 tenders) sells volume, not the new edge.
+- ❌ It shows a working partner list, which doesn't exist yet. That breaks the
+  honesty rule.
+
+## J-iteration 2 (revised)
+
+1. Hook on groupements ("155 contracts won together"). 2. Radar reveal.
+3. Partner list. 4. Outreach. 5. Reply scoring. 6. Network effect. 7. CTA.
+
+- ✅ The edge is up front.
+- ❌ It opens with a statistic, before the viewer feels the problem. The
+  strongest problem is in our own data: Radar told the demo agency **No-bid**
+  on a tender that fits its skills, *because the scope was too big for a small
+  team*. That is the "too big to bid alone" moment, and it's real.
+- ❌ "155 contracts won together" overstates a heuristic count. Say "award
+  notices that name a multi-company bidder", and show the caveat.
+- ❌ It has no gap step. A partner only makes sense once the viewer sees *what*
+  is missing. Show the tender's scope against the profile: website covered,
+  event platform and mobile app not.
+- ❌ It has no preview label plan, so it needs one.
+
+## J-iteration 3: final
+
+About 70 s, 9 beats, the same visual system and voice as v1.
+
+| # | Beat | Visual | On screen | VO | Label |
+|---|------|--------|-----------|----|-------|
+| 1 | Hook | Économat des Armées match card with a **No-bid** verdict; its reason gets highlighted | Too big to bid *alone.* | "This tender fits our agency's skills. Radar still said no-bid: the scope is too big for a small team to deliver alone." | Real Radar verdict · TED 702985-2026 · fictional demo company |
+| 2 | Insight | Three real groupement cards, where two company chips join with "+"; counter **155** | In France, you don't have to bid *alone.* | "But in France, small firms can bid together as a groupement, and TED records every one." | Heuristic count from TED · some may be subcontracting |
+| 3 | Reveal | The radar scope; blips pair up with lines; wordmark | Find the partner *you're missing.* | "Radar finds the tenders you can win, and the partners to win them with." | n/a |
+| 4 | Gap | Tender scope chips against the Rivage profile: Site web ✓, Plateforme évènementielle gap, Application mobile gap | 01 · See exactly *what you're missing.* | "It reads each tender against your profile, and pinpoints what you can't cover." | Gaps from Radar's No-bid reason |
+| 5 | Partners | Skeleton partner cards with signal badges: fills your gap, has bid jointly before, knows this buyer, doesn't compete with you, each with a TED link icon | 02 · Partners who *fill the gap.* | "Then it ranks partners who fill that gap, have bid jointly before, and know the buyer. Every signal links to its notice." | **Preview · partner finder in development** |
+| 6 | Outreach | A French proposal draft types out ("Objet : Proposition de groupement…"), with a "Send it yourself" button | 03 · A proposal in French, *you send it.* | "It drafts the proposal in French. You review it, and send it yourself." | **Preview** · Radar never emails anyone on its own |
+| 7 | Replies + network | A reply card scored on interest, role, capacity and references, then "Claim your radar" and the network graph grows | 04 · Score replies. *Grow the network.* | "Replies are scored on fit and references, and every partner you invite can claim a radar of their own." | **Preview** |
+| 8 | Receipts | Groupement receipt chips | Every claim comes *with a receipt.* | "Every claim comes with a receipt." | n/a |
+| 9 | CTA | Scope behind, with "Stop bidding *alone.*" and the "Try the live demo" pill | Stop bidding *alone.* | "Stop bidding alone. Try the live demo." | n/a |
+
+**Review of J3:** the hook is a real and specific pain, felt in under 5 s. The
+edge (French groupement data) lands by 12 s. Every unbuilt part is labelled
+as a preview. Every record is real and linked. There is one CTA, and the
+closing line echoes "Stop bidding blind" and moves it on.
+
+## J-iteration 4: the partner finder shipped (re-scripted mid-production)
+
+While J round 2 was rendering, the partner finder merged (#45) and went live on
+dev. We re-checked everything against the live API as the demo user:
+
+- The matches had been re-run (13:02). The Économat des Armées rationale the
+  hook quoted from the landing snapshot is **no longer Radar's current
+  verdict**, so a hook built on it would be stale. For that tender the finder
+  also reports **no capability gap** ("capacity" mode, led by large firms),
+  which is a weak example of finding the partner you're missing.
+- **Paris Habitat, TED 667222-2026** (a GIS/SIG platform) tells the whole story
+  with live data:
+  - Radar's current rationale: "Weak fit: SIG/GeoSaaS platform sits outside core
+    RGAA/DSFR/web focus" (fit 60.2).
+  - The finder's gaps, quoted from the notice: "Application maintenance (TMA)"
+    and "GIS / géomatique".
+  - Ranked co-contractors that cover both: AKKODIS I&S 59 (Villeurbanne, your
+    region; 2 joint bids on TED), CIRIL GROUP 52, NAOMIS 52 and ATEXO 50, each
+    with TED award evidence.
+  - The French invite comes from the app's own `draftEmail()` with those inputs,
+    so it's the exact text Radar would produce.
+  - Reply scoring shows the real rubric (Interest 25 · Covers the need 25 ·
+    References 25, checked against TED · Identity 10, SIRET · Speed 10 ·
+    Completeness 5). There are no real replies yet, so the film shows no score.
+- So the preview labels are gone. Labels now carry the app's own caveats: fit
+  is a heuristic shortlist score, a past award is evidence and not proof of
+  interest, and Radar never emails anyone.
+
+| # | Beat | On screen | VO |
+|---|------|-----------|----|
+| 1 | Hook: the Paris Habitat match card, weak fit 60.2 with its rationale | Out of reach *on your own.* | "Paris Habitat needs a GIS platform. Radar's verdict for our Lyon web agency: a weak fit. Mapping isn't what it does." |
+| 2 | Insight: groupements, 155 | In France, you don't have to bid *alone.* | (unchanged) |
+| 3 | Reveal | Find the partner *you're missing.* | "Radar finds the tenders you can win, and the partners to win them with." |
+| 4 | Gaps with French quotes | 01 · See exactly *what you're missing.* | "It reads the notice against your profile, and pinpoints the gaps: GIS, and application maintenance." |
+| 5 | The real ranked partners | 02 · Partners who *fill the gap.* | "Then it ranks partners who cover them, with their TED awards and past joint bids as evidence." |
+| 6 | The real French draft for AKKODIS I&S | 03 · Drafted in French. *You send it.* | "It drafts the invitation in French. You send it from your own mailbox." |
+| 7 | The real scoring rubric, then the network | 04 · Score replies. *Grow the network.* | "Replies are scored, references are checked against TED, and every partner who answers can open a radar of their own." |
+| 8–9 | Receipts, CTA | (unchanged) | (unchanged) |
+
+## Joint-bid production reviews
+
+### J round 1 (70.4 s)
+
+- ✅ No unintended hard cuts. Loudness −16.8 LUFS, peak −1.4 dBFS. All the
+  preview labels are visible on the partner-finder beats.
+- ❌ Scribe heard the voice say **"groupment"**, an English reading of
+  *groupement*, which would grate on French viewers. We tested three variants
+  and transcribed each in English and in French mode. Writing it as
+  « groupement » (in guillemets) made the model use a French pronunciation:
+  the French-mode transcript heard "group-more", the nasal ending. We kept
+  that take, and the captions drop the guillemets.
+- ❌ The hook headline only landed at about 5.6 s, so on mute the first 5 s
+  were a small card with no message. **Fix:** "Too big to bid alone." now lands
+  at about 1.6 s, before the voice says it.
+
+### J round 2
+
+- ✅ The hook works on mute by 2.5 s. The insight counter, the gap badges, the
+  partner signals, the typed French draft and the network growth all land on
+  their spoken words.
+- ❌ The hook card sat high, leaving the bottom third of the frame empty.
+  **Fix:** the headline and card moved down to balance the frame.
+
+### J round 3 (final)
+
+- ✅ It's re-scripted on live partner-finder data (J4). No cuts, −16.9 LUFS,
+  peak −1.4 dBFS. 130 of 131 scripted words match the transcript. The one
+  difference is "groupement", which the English model can only spell as
+  "groupment". The French-model check hears the French reading.
+- ❌ Main changed during the round (#48). The joint-bid count is now **199 of
+  2,610**, from TED's party-leader flag, which replaces the 155 heuristic. Also,
+  "2 joint bids" for AKKODIS over-counts, because one notice can be counted
+  twice across lots. **Fix:** the film shows 199 with the new source label and
+  says "joint-bid history on TED". It was re-rendered.
+- ✅ Browser checks pass 18/18 on the vertical landing page (#39). The frame
+  fits below the nav at 1280–1920 px, with no overflow at 390 px.

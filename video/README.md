@@ -60,7 +60,25 @@ node check-landing.mjs                 # browser checks against a web preview on
 
 ## Rules for edits
 
-Every tender, award, rival and number in `film.js` is copied from
-`web/src/components/Landing.tsx`, the dev snapshot of 22 Oct 2026. Don't invent
-figures. Keep these on-screen labels: fictional demo company, fit is a
-heuristic, past win isn't proof, and backtest isn't a win probability.
+The film's story is joint bids, and every record in `film.js` is real:
+
+- Paris Habitat's verdict, gaps and ranked partners come from the live partner
+  finder on dev (`GET /api/tenders/667222-2026/partners`, demo user,
+  22 Oct 2026).
+- The French invite is the output of `draftEmail()` in
+  `server/src/lib/invites.ts`.
+- The groupement notices were checked against TED's search API.
+- The reply rubric mirrors `scoreResponse()`.
+
+If the data changes, re-fetch it. Don't edit numbers by hand. Keep the
+on-screen caveats:
+
+- fictional demo company
+- fit is a heuristic shortlist score
+- a past award is evidence, not proof of interest
+- Radar never sends email on its own
+- the 199 joint-bid count comes from TED’s party-leader flag (of 2,610 award notices)
+
+**Pronunciation:** write French terms in guillemets, as in « groupement ».
+With them, `eleven_multilingual_v2` uses a French reading. Without them it says
+"groupment". `mix.mjs` removes the guillemets from the captions.

@@ -1,11 +1,38 @@
 [
- ["01_hook","Since 2025, France has published almost seven thousand public IT tenders."],
- ["02_problem","No small agency can read them all. So you miss the ones that fit… and bid blind on the rest."],
- ["03_reveal","Radar is the bid office your agency never had."],
- ["04_profile","Describe your company in plain words. Radar turns it into a profile it can search with."],
- ["05_matches","It reads every new French IT tender, scores what fits, and tells you when to walk away."],
- ["06_rivals","For any tender, see who won contracts like it before, with the award notice to prove it."],
- ["07_autopilot","Autopilot builds the pre-bid dossier on its own, then grades its predictions when the award lands."],
- ["08_receipts","Every claim comes with a receipt."],
- ["09_cta","Stop bidding blind. Try the live demo."]
+ [
+  "01_hook",
+  "Paris Habitat needs a GIS platform. Radar's verdict for our Lyon web agency: a weak fit. Mapping isn't what it does."
+ ],
+ [
+  "02_insight",
+  "But in France, small firms can bid together as a « groupement », and TED records every one."
+ ],
+ [
+  "03_reveal",
+  "Radar finds the tenders you can win, and the partners to win them with."
+ ],
+ [
+  "04_gap",
+  "It reads the notice against your profile, and pinpoints the gaps: GIS, and application maintenance."
+ ],
+ [
+  "05_partners",
+  "Then it ranks partners who cover them, with their TED awards and past joint bids as evidence."
+ ],
+ [
+  "06_outreach",
+  "It drafts the invitation in French. You send it from your own mailbox."
+ ],
+ [
+  "07_replies",
+  "Replies are scored, references are checked against TED, and every partner who answers can open a radar of their own."
+ ],
+ [
+  "08_receipts",
+  "Every claim comes with a receipt."
+ ],
+ [
+  "09_cta",
+  "Stop bidding alone. Try the live demo."
+ ]
 ]
