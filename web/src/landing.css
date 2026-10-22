@@ -294,6 +294,34 @@
 .lp-pipe b { font-family: var(--display); font-size: 19px; letter-spacing: -0.02em; line-height: 1.15; }
 .lp-pipe li > span:last-child { font-size: 14px; color: var(--lp-text-2); }
 
+/* autopilot (coming soon) */
+.lp-auto { position: relative; overflow: hidden; background: radial-gradient(50% 60% at 90% 0%, rgb(198 243 107 / 0.1), transparent 70%), var(--lp-ink); color: var(--lp-on-ink); }
+.lp-auto .lp-kicker { color: var(--lp-on-ink-2); }
+.lp-auto .lp-h2 em { color: var(--lp-signal); }
+.lp-auto-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+.lp-soon { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgb(198 243 107 / 0.4); color: var(--lp-signal); font-family: var(--lp-mono); font-size: 12px; }
+.lp-auto-lede { margin-top: 26px; max-width: 640px; font-size: 18px; color: var(--lp-on-ink-2); }
+.lp-loop { position: relative; list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); margin: 64px 0 0; padding: 0; }
+.lp-loop::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, var(--lp-ink-line), rgb(198 243 107 / 0.5), var(--lp-ink-line)); }
+.lp-loop::after { content: ''; position: absolute; top: -4px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--lp-signal); box-shadow: 0 0 16px 4px rgb(198 243 107 / 0.6); animation: lp-travel 7s linear infinite; }
+@keyframes lp-travel { from { left: 0; } to { left: calc(100% - 9px); } }
+.lp-loop li { display: flex; flex-direction: column; gap: 6px; padding: 20px 16px 0 0; font-weight: 600; font-size: 15px; line-height: 1.25; }
+.lp-loop li .lp-mono { color: var(--lp-signal); font-weight: 400; }
+.lp-auto-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; margin-top: 56px; }
+.lp-auto-card { display: flex; flex-direction: column; gap: 12px; padding: 30px; border-radius: 24px; background: var(--lp-ink-2); border: 1px solid var(--lp-ink-line); }
+.lp-auto-n { color: var(--lp-signal); }
+.lp-auto-card h3 { font-size: 23px; line-height: 1.15; }
+.lp-auto-card p { color: var(--lp-on-ink-2); font-size: 15px; }
+.lp-dossier { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 13.5px; }
+.lp-dossier li { display: flex; gap: 8px; }
+.lp-dossier li span { color: var(--lp-signal); }
+.lp-grade { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; font-family: var(--lp-mono); font-size: 12px; color: var(--lp-on-ink-2); }
+.lp-grade i { flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--lp-on-ink-2) 0 4px, transparent 4px 8px); }
+.lp-grade b { padding: 4px 9px; border-radius: 999px; background: var(--lp-signal); color: var(--lp-ink); font-weight: 500; }
+.lp-feedback { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 12px; }
+.lp-feedback span { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--lp-ink-line); font-size: 13px; }
+.lp-feedback span:nth-child(3) { background: rgb(198 243 107 / 0.16); color: var(--lp-signal); border-color: transparent; }
+
 /* gtm */
 .lp-gtm { background: var(--lp-paper-2); }
 .lp-gtm-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
@@ -321,7 +349,11 @@
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
-  .lp-pipe { grid-template-columns: repeat(3, 1fr); row-gap: 20px; }
+  .lp-pipe, .lp-loop { grid-template-columns: repeat(3, 1fr); row-gap: 20px; }
+  .lp-loop::before, .lp-loop::after { display: none; }
+  .lp-loop li { border-top: 1px solid rgb(198 243 107 / 0.3); }
+  .lp-auto-grid { grid-template-columns: 1fr 1fr; }
+  .lp-auto-wide { grid-column: 1 / -1; }
 }
 @media (max-width: 900px) {
   .lp-nav-links { display: none; }
@@ -340,7 +372,8 @@
 @media (max-width: 560px) {
   .lp-nav { padding-left: 16px; gap: 12px; }
   .lp-nav-signin { display: none; }
-  .lp-pipe { grid-template-columns: 1fr 1fr; }
+  .lp-pipe, .lp-loop { grid-template-columns: 1fr 1fr; }
+  .lp-auto-grid, .lp-dossier { grid-template-columns: 1fr; }
   .lp-blip-label, .lp-blip.left .lp-blip-label {
     left: 50%; right: auto; top: auto; bottom: 16px; transform: translateX(-50%);
     width: max-content; max-width: 130px; white-space: normal; text-align: center; font-size: 11px; padding: 5px 8px;
