@@ -17,23 +17,23 @@ export type ThreadEvent =
 
 // Company radar feed: what the watcher is doing, live.
 export type FeedEvent =
-  | { type: 'scan.started'; scanId: number }
-  | { type: 'scan.progress'; scanId: number; message: string }
+  | { type: 'scan.started'; scanId: string }
+  | { type: 'scan.progress'; scanId: string; message: string }
   | { type: 'tender.scored'; tenderId: string; score: number; verdict: string; title: string }
-  | { type: 'scan.finished'; scanId: number; fetched: number; fresh: number }
-  | { type: 'scan.error'; scanId: number; error: string }
+  | { type: 'scan.finished'; scanId: string; fetched: number; fresh: number }
+  | { type: 'scan.error'; scanId: string; error: string }
   | { type: 'rules.updated'; rules: string };
 
 export const redis = new Redis(REDIS_URL);
 
 export const threadKey = (threadId: string) => `thread:${threadId}:events`;
-export const feedKey = (companyId: number) => `company:${companyId}:feed`;
+export const feedKey = (companyId: string) => `company:${companyId}:feed`;
 
 export async function publish(threadId: string, event: ThreadEvent) {
   await redis.xadd(threadKey(threadId), 'MAXLEN', '~', MAX_LEN, '*', 'data', JSON.stringify(event));
 }
 
-export async function publishFeed(companyId: number, event: FeedEvent) {
+export async function publishFeed(companyId: string, event: FeedEvent) {
   await redis.xadd(feedKey(companyId), 'MAXLEN', '~', MAX_LEN, '*', 'data', JSON.stringify(event));
 }
 

@@ -2,7 +2,8 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { getCompany, getPastBids, migrate, pool } from './db';
+import { runMigrations } from './db';
+import { createCompany, getCompany, getPastBids, MATCH_SELECT, pool, type ProfileInput, updateCompany } from './store';
 import { feedKey, publish, redis, subscribe, threadKey } from './events';
 import { draftProfile, makeAnalyst, memory } from './mastra';
 import { hasModelKey, MODEL } from './model';
@@ -22,7 +23,7 @@ app.get('/api/health', async (c) => {
 // ---------- Companies ----------
 
 app.get('/api/companies', async (c) => {
-  const { rows } = await pool.query('select id, name from companies order by id');
+  const { rows } = await pool.query('select id, name from companies order by created_at');
   return c.json({ companies: rows });
 });
 
@@ -32,47 +33,26 @@ app.post('/api/companies/draft', async (c) => {
   return c.json({ profile: await draftProfile(description) });
 });
 
-type ProfileInput = {
-  name: string;
-  pitch: string;
-  cpv: string[];
-  countries: string[];
-  keywords: string[];
-  minValue?: number | null;
-  maxValue?: number | null;
-};
-
 app.post('/api/companies', async (c) => {
-  const p = await c.req.json<ProfileInput>();
-  const { rows } = await pool.query(
-    `insert into companies (name, pitch, cpv, countries, keywords, min_value, max_value)
-     values ($1,$2,$3,$4,$5,$6,$7) returning id`,
-    [p.name, p.pitch, p.cpv, p.countries, p.keywords, p.minValue ?? null, p.maxValue ?? null],
-  );
-  const id = rows[0].id as number;
+  const id = await createCompany(await c.req.json<ProfileInput>());
   void scan(id);
   return c.json({ id }, 201);
 });
 
 app.get('/api/companies/:id', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const company = await getCompany(id);
   if (!company) return c.json({ error: 'not found' }, 404);
   return c.json({ company, pastBids: await getPastBids(id) });
 });
 
 app.put('/api/companies/:id', async (c) => {
-  const id = Number(c.req.param('id'));
-  const p = await c.req.json<ProfileInput>();
-  await pool.query(
-    `update companies set name = $2, pitch = $3, cpv = $4, countries = $5, keywords = $6, min_value = $7, max_value = $8 where id = $1`,
-    [id, p.name, p.pitch, p.cpv, p.countries, p.keywords, p.minValue ?? null, p.maxValue ?? null],
-  );
+  await updateCompany(c.req.param('id'), await c.req.json<ProfileInput>());
   return c.json({ ok: true });
 });
 
 app.post('/api/companies/:id/bids', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const b = await c.req.json<{ title: string; buyer: string; year?: number; value?: number; outcome: string; summary: string }>();
   await pool.query(
     'insert into past_bids (company_id, title, buyer, year, value, outcome, summary) values ($1,$2,$3,$4,$5,$6,$7)',
@@ -82,19 +62,17 @@ app.post('/api/companies/:id/bids', async (c) => {
 });
 
 app.delete('/api/companies/:id/bids/:bidId', async (c) => {
-  await pool.query('delete from past_bids where company_id = $1 and id = $2', [Number(c.req.param('id')), Number(c.req.param('bidId'))]);
+  await pool.query('delete from past_bids where company_id = $1 and id = $2', [c.req.param('id'), c.req.param('bidId')]);
   return c.json({ ok: true });
 });
 
 // ---------- Radar ----------
 
 app.get('/api/companies/:id/matches', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const { rows } = await pool.query(
-    `select t.id, t.title, t.buyer, t.country, t.cpv, t.nature, t.value, t.currency, t.published, t.deadline, t.url,
-            m.score, m.verdict, m.headline, m.reasons, m.risks, m.effort, m.scored_by, m.decision, m.decision_reason,
-            m.brief is not null as has_brief, m.scored_at
-       from matches m join tenders t on t.id = m.tender_id
+    `select ${MATCH_SELECT}, m.brief is not null as has_brief
+       from tender_matches m join tenders t on t.id = m.tender_id
       where m.company_id = $1 and (t.deadline is null or t.deadline > now() or m.decision is not null)
       order by (m.scored_by <> 'quick') desc, m.score desc, t.deadline asc nulls last
       limit 200`,
@@ -104,38 +82,37 @@ app.get('/api/companies/:id/matches', async (c) => {
 });
 
 app.get('/api/companies/:id/stats', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const [{ rows: m }, { rows: s }, { rows: total }] = await Promise.all([
     pool.query(
       `select count(*)::int as matches,
               count(*) filter (where m.verdict = 'go')::int as go,
               count(*) filter (where m.verdict = 'maybe')::int as maybe,
               count(*) filter (where m.decision is not null)::int as decided,
-              coalesce(sum(t.value) filter (where m.verdict in ('go','maybe') and m.scored_by <> 'quick'), 0)::float as pipeline,
+              coalesce(sum(t.estimated_value) filter (where m.verdict in ('go','maybe') and m.scored_by <> 'quick'), 0)::float as pipeline,
               min(t.deadline) filter (where m.verdict = 'go' and t.deadline > now()) as next_deadline
-         from matches m join tenders t on t.id = m.tender_id
+         from tender_matches m join tenders t on t.id = m.tender_id
         where m.company_id = $1 and (t.deadline is null or t.deadline > now())`,
       [id],
     ),
-    pool.query('select * from scans where company_id = $1 order by id desc limit 1', [id]),
+    pool.query('select * from scans where company_id = $1 order by started_at desc limit 1', [id]),
     pool.query('select coalesce(sum(fetched), 0)::int as scanned, count(*)::int as sweeps from scans where company_id = $1', [id]),
   ]);
   return c.json({ ...m[0], ...total[0], lastScan: s[0] ?? null });
 });
 
 app.post('/api/companies/:id/scan', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   void scan(id);
   return c.json({ ok: true }, 202);
 });
 
 app.get('/api/companies/:id/tenders/:tid', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const { rows } = await pool.query(
-    `select t.id, t.title, t.buyer, t.country, t.cpv, t.nature, t.value, t.currency, t.published, t.deadline, t.url, t.description,
-            m.score, m.verdict, m.headline, m.reasons, m.risks, m.effort, m.scored_by, m.decision, m.decision_reason, m.brief
-       from tenders t left join matches m on m.tender_id = t.id and m.company_id = $1
-      where t.id = $2`,
+    `select ${MATCH_SELECT}, t.description, m.brief
+       from tenders t left join tender_matches m on m.tender_id = t.id and m.company_id = $1
+      where t.publication_number = $2`,
     [id, c.req.param('tid')],
   );
   if (!rows[0]) return c.json({ error: 'not found' }, 404);
@@ -143,29 +120,30 @@ app.get('/api/companies/:id/tenders/:tid', async (c) => {
 });
 
 app.post('/api/companies/:id/tenders/:tid/decision', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const tid = c.req.param('tid');
   const { decision, reason } = await c.req.json<{ decision: 'go' | 'no-go' | null; reason?: string }>();
   await pool.query(
-    'update matches set decision = $3, decision_reason = $4, decided_at = case when $3::text is null then null else now() end where company_id = $1 and tender_id = $2',
+    `update tender_matches m set decision = $3, decision_reason = $4, decided_at = case when $3::text is null then null else now() end
+       from tenders t where t.id = m.tender_id and m.company_id = $1 and t.publication_number = $2`,
     [id, tid, decision, reason ?? null],
   );
   // Learn from it, then re-score the open undecided shortlist with the new rules.
   void (async () => {
     await learnRules(id);
     const { rows } = await pool.query(
-      `select m.tender_id from matches m join tenders t on t.id = m.tender_id
+      `select t.publication_number from tender_matches m join tenders t on t.id = m.tender_id
         where m.company_id = $1 and m.decision is null and m.scored_by <> 'quick' and (t.deadline is null or t.deadline > now())
         order by m.score desc limit 8`,
       [id],
     );
-    await rescore(id, rows.map((r) => r.tender_id));
+    await rescore(id, rows.map((r) => r.publication_number));
   })().catch((e) => console.error('learn/rescore', e));
   return c.json({ ok: true });
 });
 
 app.post('/api/companies/:id/tenders/:tid/brief', async (c) => {
-  const id = Number(c.req.param('id'));
+  const id = c.req.param('id');
   const tid = c.req.param('tid');
   const threadId = `brief-${id}-${tid}`;
   const runId = crypto.randomUUID();
@@ -184,13 +162,16 @@ Then write markdown with exactly these sections:
 ## Next steps
 (3-5 concrete actions with owners like "Bid manager", "Tech lead")`;
   void runAgent({ companyId: id, threadId, runId, message: prompt, persist: false, onDone: async (text) => {
-    await pool.query('update matches set brief = $3 where company_id = $1 and tender_id = $2', [id, tid, text]);
+    await pool.query(
+      `update tender_matches m set brief = $3 from tenders t where t.id = m.tender_id and m.company_id = $1 and t.publication_number = $2`,
+      [id, tid, text],
+    );
   } });
   return c.json({ threadId, runId }, 202);
 });
 
 // SSE: live radar activity for a company.
-app.get('/api/companies/:id/feed', (c) => sse(c, feedKey(Number(c.req.param('id')))));
+app.get('/api/companies/:id/feed', (c) => sse(c, feedKey(c.req.param('id'))));
 
 // ---------- Chat ----------
 
@@ -217,7 +198,7 @@ app.post('/api/chat', async (c) => {
     threadId: string;
     message: string;
     messageId?: string;
-    companyId: number;
+    companyId: string;
   }>();
   if (!threadId || !message || !companyId) return c.json({ error: 'threadId, message and companyId are required' }, 400);
 
@@ -240,7 +221,7 @@ function summarize(result: unknown): string {
 }
 
 async function runAgent(o: {
-  companyId: number;
+  companyId: string;
   threadId: string;
   runId: string;
   message: string;
@@ -306,7 +287,7 @@ function sse(c: any, key: string) {
 app.use('/*', serveStatic({ root: './public' }));
 app.get('*', serveStatic({ path: './public/index.html' }));
 
-await migrate();
+await runMigrations();
 await seed();
 if (process.env.WATCHER !== 'off') startWatcher();
 

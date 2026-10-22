@@ -1,4 +1,4 @@
-import { listCompanies, pool } from './db';
+import { createCompany, listCompanies, pool } from './store';
 
 // Demo firm so the radar has someone to watch on first boot. The firm and its
 // past bids are fictional (buyers kept generic on purpose); the tenders it is
@@ -26,16 +26,20 @@ const BIDS = [
 
 export async function seed() {
   if ((await listCompanies()).length) return;
-  const { rows } = await pool.query(
-    `insert into companies (name, pitch, cpv, countries, keywords, min_value, max_value)
-     values ($1,$2,$3,$4,$5,$6,$7) returning id`,
-    [DEMO.name, DEMO.pitch, DEMO.cpv, DEMO.countries, DEMO.keywords, DEMO.min_value, DEMO.max_value],
-  );
+  const id = await createCompany({
+    name: DEMO.name,
+    pitch: DEMO.pitch,
+    cpv: DEMO.cpv,
+    countries: DEMO.countries,
+    keywords: DEMO.keywords,
+    minValue: DEMO.min_value,
+    maxValue: DEMO.max_value,
+  });
   for (const b of BIDS) {
     await pool.query(
       'insert into past_bids (company_id, title, buyer, year, value, outcome, summary) values ($1,$2,$3,$4,$5,$6,$7)',
-      [rows[0].id, b.title, b.buyer, b.year, b.value, b.outcome, b.summary],
+      [id, b.title, b.buyer, b.year, b.value, b.outcome, b.summary],
     );
   }
-  console.log('seeded demo company', rows[0].id);
+  console.log('seeded demo company', id);
 }

@@ -1,6 +1,6 @@
 import { Agent } from '@mastra/core/agent';
 import { z } from 'zod';
-import { type Company, getCompany, getDecisions, getPastBids, listCompanies, pool } from './db';
+import { type Company, getCompany, getDecisions, getPastBids, listCompanies, pool, rowToTender, saveMatch, saveTender } from './store';
 import { publishFeed, redis } from './events';
 import { hasModelKey, MODEL, SCORING_MODEL } from './model';
 import { cpvPattern, searchTenders, type Tender } from './ted';
@@ -87,39 +87,14 @@ async function llmScore(context: string, t: Tender) {
   return r.object as z.infer<typeof ScoreSchema>;
 }
 
-async function saveTender(t: Tender) {
-  await pool.query(
-    `insert into tenders (id, title, buyer, country, cpv, notice_type, nature, value, currency, published, deadline, description, url, raw)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-     on conflict (id) do update set title = excluded.title, deadline = excluded.deadline, value = excluded.value, raw = excluded.raw`,
-    [t.id, t.title, t.buyer, t.country, t.cpv, t.noticeType, t.nature, t.value, t.currency, t.published, t.deadline, t.description, t.url, JSON.stringify(t.raw)],
-  );
-}
-
-async function saveMatch(
-  companyId: number,
-  tenderId: string,
-  m: { score: number; verdict: string; headline?: string; reasons?: string[]; risks?: string[]; effort?: string },
-  scoredBy: string,
-) {
-  await pool.query(
-    `insert into matches (company_id, tender_id, score, verdict, headline, reasons, risks, effort, scored_by)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-     on conflict (company_id, tender_id) do update set score = excluded.score, verdict = excluded.verdict,
-       headline = excluded.headline, reasons = excluded.reasons, risks = excluded.risks, effort = excluded.effort,
-       scored_by = excluded.scored_by, scored_at = now()`,
-    [companyId, tenderId, m.score, m.verdict, m.headline ?? '', JSON.stringify(m.reasons ?? []), JSON.stringify(m.risks ?? []), m.effort ?? null, scoredBy],
-  );
-}
-
-const running = new Set<number>();
+const running = new Set<string>();
 
 /** One radar sweep for a company. Only notices it has never seen get scored. */
-export async function scan(companyId: number, opts: { rescoreAll?: boolean } = {}) {
+export async function scan(companyId: string, opts: { rescoreAll?: boolean } = {}) {
   if (running.has(companyId)) return null;
   running.add(companyId);
   const { rows } = await pool.query('insert into scans (company_id) values ($1) returning id', [companyId]);
-  const scanId: number = rows[0].id;
+  const scanId: string = rows[0].id;
   const progress = (message: string) => publishFeed(companyId, { type: 'scan.progress', scanId, message });
   try {
     const c = await getCompany(companyId);
@@ -129,16 +104,16 @@ export async function scan(companyId: number, opts: { rescoreAll?: boolean } = {
 
     const found = await searchTenders({ cpv: c.cpv, keywords: c.keywords, countries: c.countries, sinceDays: 30 }, 80);
     const seenKey = `company:${companyId}:seen`;
-    const fresh: Tender[] = [];
+    const fresh: (Tender & { rowId: string })[] = [];
     for (const t of found) {
-      await saveTender(t);
+      const rowId = await saveTender(t);
       const isNew = (await redis.sadd(seenKey, t.id)) === 1;
-      if (isNew || opts.rescoreAll) fresh.push(t);
+      if (isNew || opts.rescoreAll) fresh.push({ ...t, rowId });
     }
     await progress(`${found.length} open notices, ${fresh.length} new since last sweep`);
 
     const ranked = fresh.map((t) => ({ t, q: quickScore(c, t) })).sort((a, b) => b.q.score - a.q.score);
-    for (const { t, q } of ranked) await saveMatch(companyId, t.id, q, 'quick');
+    for (const { t, q } of ranked) await saveMatch(companyId, t.rowId, q, 'quick');
 
     if (hasModelKey && ranked.length) {
       const context = await companyContext(c);
@@ -147,7 +122,7 @@ export async function scan(companyId: number, opts: { rescoreAll?: boolean } = {
       await runPool(top, 4, async ({ t }) => {
         try {
           const m = await llmScore(context, t);
-          await saveMatch(companyId, t.id, m, MODEL);
+          await saveMatch(companyId, t.rowId, m, MODEL);
           await publishFeed(companyId, { type: 'tender.scored', tenderId: t.id, score: m.score, verdict: m.verdict, title: t.title });
         } catch (err) {
           console.error('scoring failed', t.id, err);
@@ -170,15 +145,14 @@ export async function scan(companyId: number, opts: { rescoreAll?: boolean } = {
 }
 
 /** Re-score already stored tenders with the latest context (after the team teaches it). */
-export async function rescore(companyId: number, tenderIds: string[]) {
+export async function rescore(companyId: string, publicationNumbers: string[]) {
   const c = await getCompany(companyId);
   if (!c || !hasModelKey) return;
   const context = await companyContext(c);
-  const { rows } = await pool.query('select * from tenders where id = any($1)', [tenderIds]);
-  await runPool(rows, 4, async (r: any) => {
-    const t: Tender = { ...r, noticeType: r.notice_type, value: r.value == null ? null : Number(r.value), published: r.published?.toISOString?.().slice(0, 10) ?? r.published, deadline: r.deadline?.toISOString?.() ?? r.deadline };
+  const { rows } = await pool.query('select * from tenders where publication_number = any($1)', [publicationNumbers]);
+  await runPool(rows.map(rowToTender), 4, async (t) => {
     const m = await llmScore(context, t);
-    await saveMatch(companyId, t.id, m, MODEL);
+    await saveMatch(companyId, t.rowId, m, MODEL);
     await publishFeed(companyId, { type: 'tender.scored', tenderId: t.id, score: m.score, verdict: m.verdict, title: t.title });
   });
 }
@@ -192,7 +166,7 @@ const rulesAgent = new Agent({
 });
 
 /** After every decision, distil the team's revealed preferences into rules the scorer reads. */
-export async function learnRules(companyId: number) {
+export async function learnRules(companyId: string) {
   if (!hasModelKey) return;
   const decisions = await getDecisions(companyId, 30);
   if (!decisions.length) return;
@@ -202,7 +176,7 @@ export async function learnRules(companyId: number) {
       .join('\n'),
   );
   const rules = r.text.trim();
-  await pool.query('update companies set learned_rules = $2 where id = $1', [companyId, rules]);
+  await pool.query('update companies set learned_rules = $2, updated_at = now() where id = $1', [companyId, rules]);
   await publishFeed(companyId, { type: 'rules.updated', rules });
 }
 

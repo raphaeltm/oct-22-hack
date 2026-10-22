@@ -3,7 +3,7 @@ import { createTool } from '@mastra/core/tools';
 import { Memory } from '@mastra/memory';
 import { PostgresStore } from '@mastra/pg';
 import { z } from 'zod';
-import { getCompany, pool } from '../db';
+import { getCompany, MATCH_SELECT, pool } from '../store';
 import { MODEL } from '../model';
 import { companyContext, learnRules } from '../radar';
 import { searchAwards, searchTenders } from '../ted';
@@ -24,7 +24,7 @@ const median = (xs: number[]) => {
 };
 
 /** Tools bound to one company, so the agent can't wander into another firm's data. */
-function companyTools(companyId: number) {
+function companyTools(companyId: string) {
   return {
     companyProfile: createTool({
       id: 'company-profile',
@@ -41,8 +41,9 @@ function companyTools(companyId: number) {
       inputSchema: z.object({ verdict: z.enum(['go', 'maybe', 'no', 'any']).default('any'), limit: z.number().default(10) }),
       execute: async ({ verdict, limit }) => {
         const { rows } = await pool.query(
-          `select t.id, t.title, t.buyer, t.country, t.value, t.deadline, m.score, m.verdict, m.headline, m.decision
-             from matches m join tenders t on t.id = m.tender_id
+          `select t.publication_number as id, t.title, t.buyer_name as buyer, t.buyer_country as country,
+                  t.estimated_value::float as value, t.deadline, t.url, m.score, m.verdict, m.headline, m.decision
+             from tender_matches m join tenders t on t.id = m.tender_id
             where m.company_id = $1 and ($2 = 'any' or m.verdict = $2)
             order by m.score desc limit $3`,
           [companyId, verdict, Math.min(limit, 30)],
@@ -56,10 +57,9 @@ function companyTools(companyId: number) {
       inputSchema: z.object({ tenderId: z.string() }),
       execute: async ({ tenderId }) => {
         const { rows } = await pool.query(
-          `select t.id, t.title, t.buyer, t.country, t.cpv, t.nature, t.value, t.currency, t.published, t.deadline, t.description, t.url,
-                  m.score, m.verdict, m.headline, m.reasons, m.risks, m.effort
-             from tenders t left join matches m on m.tender_id = t.id and m.company_id = $2
-            where t.id = $1`,
+          `select ${MATCH_SELECT}, t.description
+             from tenders t left join tender_matches m on m.tender_id = t.id and m.company_id = $2
+            where t.publication_number = $1`,
           [tenderId, companyId],
         );
         return rows[0] ?? { error: 'not found' };
@@ -111,7 +111,8 @@ function companyTools(companyId: number) {
       inputSchema: z.object({ tenderId: z.string(), decision: z.enum(['go', 'no-go']), reason: z.string() }),
       execute: async ({ tenderId, decision, reason }) => {
         await pool.query(
-          'update matches set decision = $3, decision_reason = $4, decided_at = now() where company_id = $1 and tender_id = $2',
+          `update tender_matches m set decision = $3, decision_reason = $4, decided_at = now()
+             from tenders t where t.id = m.tender_id and m.company_id = $1 and t.publication_number = $2`,
           [companyId, tenderId, decision, reason],
         );
         void learnRules(companyId).catch((e) => console.error('learnRules', e));
@@ -129,7 +130,7 @@ Rules:
 - Be concise and decisive, like a good bid manager. Use short markdown sections and bullet points. Prices in EUR.
 - Link tenders as [publication number](url) when you have the url.`;
 
-export function makeAnalyst(companyId: number) {
+export function makeAnalyst(companyId: string) {
   return new Agent({
     id: `analyst-${companyId}`,
     name: 'Bid analyst',
