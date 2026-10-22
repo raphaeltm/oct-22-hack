@@ -389,6 +389,24 @@
 .lp-feedback span:nth-child(3) { background: rgb(198 243 107 / 0.16); color: var(--lp-signal); border-color: transparent; }
 
 /* gtm */
+/* joint bidding */
+.lp-partners { background: radial-gradient(50% 60% at 10% 0%, rgb(122 168 116 / 0.16), transparent 70%), var(--lp-ink); color: var(--lp-on-ink); }
+.lp-partners .lp-kicker { color: var(--lp-on-ink-2); }
+.lp-partners .lp-h2 em { color: var(--lp-signal); }
+.lp-partners .lp-footnote { color: var(--lp-on-ink-2); }
+.lp-partners .lp-footnote a { color: var(--lp-signal); text-decoration: underline; text-underline-offset: 3px; }
+.lp-partners-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 64px); align-items: start; margin-top: 48px; }
+.lp-partners-stats { grid-template-columns: repeat(2, 1fr); margin: 0; }
+.lp-partners-stats > div { background: var(--lp-ink-2); border: 1px solid var(--lp-ink-line); }
+.lp-partner-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lp-partner-steps li { display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 18px 0; border-top: 1px solid var(--lp-ink-line); }
+.lp-partner-steps li:last-child { border-bottom: 1px solid var(--lp-ink-line); }
+.lp-partner-steps .lp-mono { color: var(--lp-signal); padding-top: 3px; }
+.lp-partner-steps b { font-size: 18px; letter-spacing: -0.01em; }
+.lp-partner-steps p { margin-top: 4px; color: var(--lp-on-ink-2); font-size: 15px; }
+.lp-partners-live { display: flex; align-items: center; gap: 10px; margin-top: 36px; font-size: 15px; color: var(--lp-on-ink); }
+.lp-partners-live .lp-live { flex: none; }
+
 .lp-gtm { background: var(--lp-paper-2); }
 .lp-gtm-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
 .lp-gtm-copy { font-size: 16px; color: var(--lp-text-2); }
@@ -426,7 +444,7 @@
 
 @media (max-width: 900px) {
   .lp-hero { min-height: 0; padding: 120px clamp(20px, 5vw, 72px) 60px; }
-  .lp-auto-grid { grid-template-columns: 1fr; }
+  .lp-auto-grid, .lp-partners-grid { grid-template-columns: 1fr; }
   .lp-nav-links { display: none; }
   .lp-nav-cta { margin-left: auto; }
   .lp-hero { grid-template-columns: 1fr; gap: 56px; }

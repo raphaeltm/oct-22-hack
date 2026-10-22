@@ -9,6 +9,18 @@ import '../landing.css';
 const SNAPSHOT = 'Dev database snapshot, 22 Oct 2026';
 const ted = (pub: string) => `https://ted.europa.eu/en/notice/-/detail/${pub}`;
 
+// Joint-bid groups (groupements) in French IT award notices since 2025, counted from
+// TED's API at 12:35 UTC on 22 Oct 2026: a bidding party with more member companies
+// than party names. A heuristic, same figure as the /hackathon deck.
+const GROUPS = { withGroup: '155', checked: '2,610' };
+
+const PARTNER_STEPS = [
+  { k: 'Find', d: "For a tender, rank firms that fill your gaps, have bid jointly before, know this buyer and don't compete with you. Every signal links to its notice." },
+  { k: 'Reach out', d: "The agent drafts a formal French proposal citing the tender and the partner's own wins. You send it; Radar never emails anyone on its own." },
+  { k: 'Score the reply', d: 'Interest, role, capacity and references, read as untrusted input, so you know who is serious before the deadline.' },
+  { k: 'Grow', d: 'The reply page invites the partner to claim their profile and get their own radar.' },
+];
+
 const STATS = [
   { value: '6,939', label: 'French IT notices indexed from TED since 2025' },
   { value: '2,610', label: 'contract award notices mined for winners' },
@@ -141,7 +153,7 @@ export function Landing() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Radar: the bid office your agency never had';
+    document.title = 'Radar: win the tenders too big to bid alone';
     return () => {
       document.title = prev;
     };
@@ -166,7 +178,7 @@ export function Landing() {
           <span>radar<i>.</i></span>
         </Link>
         <nav aria-label="Sections" className="lp-nav-links">
-          <a href="#film">Film</a>
+          <a href="#partners">Joint bids</a>
           <a href="#how">How it works</a>
           <a href="#evidence">Evidence</a>
           <a href="#autopilot">Autopilot</a>
@@ -193,17 +205,18 @@ export function Landing() {
               <span className="lp-live" /> Live on TED · France · IT services
             </p>
             <h1 className="lp-rise" style={{ '--d': '80ms' } as CSSProperties}>
-              The bid office
+              Win the tenders
               <br />
-              your agency <em>never had.</em>
+              <em>too big to bid alone.</em>
             </h1>
             <p className="lp-lede lp-rise" style={{ '--d': '160ms' } as CSSProperties}>
-              Radar reads every French public IT tender, matches it to what your company actually does, and shows
-              you who won contracts like it before. Every claim links to its TED notice.
+              French buyers let small firms bid together as a groupement. Radar reads every French public IT tender,
+              shows you which ones fit and who won work like it, and is learning to find the partner that fills your
+              gap. Every claim links to its TED notice.
             </p>
             <div className="lp-hero-cta lp-rise" style={{ '--d': '240ms' } as CSSProperties}>
               {cta}
-              <a href="#how" className="lp-btn lp-btn-ghost">See how it works</a>
+              <a href="#partners" className="lp-btn lp-btn-ghost">How joint bidding works</a>
             </div>
           </div>
           <div className="lp-scope-wrap lp-rise" style={{ '--d': '200ms' } as CSSProperties}>
@@ -262,9 +275,9 @@ export function Landing() {
                 Every award notice names its winner. But nobody connects those names to the bid on your desk, so
                 you find out who you were up against after you've lost.
               </Pain>
-              <Pain n="03" title="They burn days on bad bids">
-                Qualifying one tender means reading the specification, the award criteria and the buyer's history.
-                Most of it ends in a no-go.
+              <Pain n="03" title="They can't cover the whole lot">
+                Tenders bundle design, development, hosting and support. A small agency is often missing one piece,
+                and without a partner a tender that mostly fits becomes a no-go.
               </Pain>
             </div>
             <dl className="lp-stats" data-reveal>
@@ -276,6 +289,61 @@ export function Landing() {
               ))}
             </dl>
             <p className="lp-footnote" data-reveal>{SNAPSHOT}. Source: TED, EU Publications Office.</p>
+          </div>
+        </section>
+
+        {/* ---------------- joint bidding ---------------- */}
+        <section className="lp-section lp-partners" id="partners" aria-labelledby="partners-title">
+          <div className="lp-wrap">
+            <div className="lp-auto-head" data-reveal>
+              <p className="lp-kicker">Bid together</p>
+              <span className="lp-soon">Partner finder · in development, not in the demo yet</span>
+            </div>
+            <h2 className="lp-h2" id="partners-title" data-reveal>
+              Your next win may need a partner. <em>TED already shows who teams up.</em>
+            </h2>
+            <p className="lp-auto-lede" data-reveal>
+              French procurement lets SMEs bid as a <i>groupement</i> (co-traitance), and award notices record who
+              bid with whom. Most tools, ours included today, flatten those groups into a single winner. The partner
+              finder puts that signal to work, so finding a partner starts from evidence, not from your contacts list.
+            </p>
+            <div className="lp-partners-grid">
+              <div data-reveal>
+                <dl className="lp-stats lp-partners-stats">
+                  <div>
+                    <dt>French IT award notices since 2025 with a multi-company bidder</dt>
+                    <dd>{GROUPS.withGroup}</dd>
+                  </div>
+                  <div>
+                    <dt>award notices checked</dt>
+                    <dd>{GROUPS.checked}</dd>
+                  </div>
+                </dl>
+                <p className="lp-footnote">
+                  Counted from TED's API on 22 Oct 2026: a bidding party with more member companies than party names
+                  (a heuristic; some may be subcontracting). Examples:{' '}
+                  <a href={ted('17241-2025')} target="_blank" rel="noreferrer">17241-2025</a> Deloitte Conseil + KSHUTTLE
+                  for SNCF;{' '}
+                  <a href={ted('4575-2025')} target="_blank" rel="noreferrer">4575-2025</a> ENGIT + MEJA for the
+                  Bouches-du-Rhône département.
+                </p>
+              </div>
+              <ol className="lp-partner-steps" data-reveal aria-label="Partner finder, planned flow">
+                {PARTNER_STEPS.map((st, i) => (
+                  <li key={st.k}>
+                    <span className="lp-mono">{String(i + 1).padStart(2, '0')}</span>
+                    <div>
+                      <b>{st.k}</b>
+                      <p>{st.d}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <p className="lp-partners-live" data-reveal>
+              <span className="lp-live" /> Live today: Autopilot's pre-bid dossier flags tenders worth more than €1M for a
+              small firm and suggests a groupement or subcontracting.
+            </p>
           </div>
         </section>
 
@@ -602,9 +670,9 @@ export function Landing() {
         <section className="lp-final">
           <div className="lp-final-scope" aria-hidden><Scope quiet /></div>
           <h2 data-reveal>
-            Stop bidding <em>blind.</em>
+            Stop bidding <em>alone.</em>
           </h2>
-          <p data-reveal>Sign in as Rivage Numérique and ask the agent what to bid on.</p>
+          <p data-reveal>Sign in as Rivage Numérique to try matching, rival research and dossiers today. The partner finder is next.</p>
           <div data-reveal>{cta}</div>
         </section>
 
