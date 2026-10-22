@@ -3,6 +3,8 @@ import { Hono } from 'hono';
 import type { AuthVariables } from '../auth';
 import { competitorsForTender, competitorsForUser } from '../lib/competitors';
 import { refreshMatches, savedMatches } from '../lib/matching';
+import { teamingFor } from '../lib/teaming';
+import { getCompany } from '../mastra/tools/company';
 
 export const matchesRoutes = new Hono<{ Variables: AuthVariables }>();
 
@@ -18,8 +20,16 @@ matchesRoutes.get('/matches', async (c) => {
     await refreshMatches(userId, { limit: 25 });
     saved = await savedMatches(userId, limit);
   }
-  return c.json(saved);
+  return c.json(saved ? await withTeaming(userId, saved) : saved);
 });
+
+// Adds the "bid together?" signal (capability gaps, size) to each saved match.
+async function withTeaming<T extends { matches: { id: string }[] }>(userId: string, saved: T) {
+  const company = await getCompany(userId);
+  if (!company) return saved;
+  const teaming = await teamingFor(company, saved.matches.map((m) => m.id));
+  return { ...saved, matches: saved.matches.map((m) => ({ ...m, teaming: teaming.get(m.id) ?? null })) };
+}
 
 // POST /api/matches/refresh  recompute and save; returns signals and notes too
 matchesRoutes.post('/matches/refresh', async (c) => {

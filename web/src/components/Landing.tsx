@@ -10,9 +10,9 @@ const SNAPSHOT = 'Dev database snapshot, 22 Oct 2026';
 const ted = (pub: string) => `https://ted.europa.eu/en/notice/-/detail/${pub}`;
 
 // Joint-bid groups (groupements) in French IT award notices since 2025, counted from
-// TED's API at 12:35 UTC on 22 Oct 2026: a bidding party with more member companies
-// than party names. A heuristic, same figure as the /hackathon deck.
-const GROUPS = { withGroup: '155', checked: '2,610' };
+// TED's API on 22 Oct 2026: notices whose tendering-party-leader flag marks a
+// multi-member party (the same set the partner-finder importer reads).
+const GROUPS = { withGroup: '199', checked: '2,610' };
 
 const PARTNER_STEPS = [
   { k: 'Find', d: "For a tender, rank firms that fill your gaps, have bid jointly before, know this buyer and don't compete with you. Every signal links to its notice." },
@@ -320,8 +320,8 @@ export function Landing() {
                   </div>
                 </dl>
                 <p className="lp-footnote">
-                  Counted from TED's API on 22 Oct 2026: a bidding party with more member companies than party names
-                  (a heuristic; some may be subcontracting). Examples:{' '}
+                  Counted from TED's API on 22 Oct 2026: award notices whose party-leader flag marks a multi-member
+                  bid. Examples:{' '}
                   <a href={ted('17241-2025')} target="_blank" rel="noreferrer">17241-2025</a> Deloitte Conseil + KSHUTTLE
                   for SNCF;{' '}
                   <a href={ted('4575-2025')} target="_blank" rel="noreferrer">4575-2025</a> ENGIT + MEJA for the

@@ -268,6 +268,7 @@ export const matches: Match[] = open.map(({ score, rationale, ...tender }) => ({
   score: Math.round((score ?? 0) * 100),
   rationale: rationale ?? null,
   status: 'open' as const,
+  teaming: null,
 }));
 
 export function getTender(id: string) {

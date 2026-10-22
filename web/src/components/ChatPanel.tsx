@@ -5,9 +5,9 @@ import { useChat } from './ChatContext';
 import { Icon } from './ui';
 
 const SUGGESTIONS = [
+  ['Find a groupement partner', 'Which of our matched tenders should we bid on as a groupement, and which firms could fill the capabilities we lack? Cite their TED awards and past joint bids.'],
   ['Build my company profile', 'Help me build the profile of Rivage Numérique, a Lyon digital consultancy focused on RGAA accessibility, DSFR and sovereign cloud for local government. Ask me about the details you need.'],
-  ['Prepare a bid review', 'Help me create a go/no-go checklist for a French public-sector IT tender. Ask me to paste the tender requirements first.'],
-  ['Map the competition', 'Who wins the most French public digital-services contracts like ours, and with which buyers?'],
+  ['Rivals or partners?', 'Who wins the most French public digital-services contracts like ours, and which of them would complement us as partners rather than compete?'],
 ];
 
 export function ChatPanel() {
@@ -43,7 +43,7 @@ export function ChatPanel() {
           <span className="agent-dot" data-busy={busy} data-offline={!connected} />
           <div>
             <strong>Radar copilot</strong>
-            <small>{busy ? 'Thinking…' : connected ? 'Ask about tenders and competitors' : 'Connecting…'}</small>
+            <small>{busy ? 'Thinking…' : connected ? 'Ask about tenders, partners and rivals' : 'Connecting…'}</small>
           </div>
         </div>
         <div className="chat-actions">
@@ -60,7 +60,7 @@ export function ChatPanel() {
         {messages.length === 0 && (
           <div className="chat-empty">
             <div className="chat-empty-icon"><Icon name="spark" /></div>
-            <p>Ask the agent to qualify a tender, profile a competitor or draft a go/no-go brief.</p>
+            <p>Ask the agent to find a groupement partner, qualify a tender or size up a rival.</p>
             <div className="suggestions">
               {SUGGESTIONS.map(([title, prompt]) => (
                 <button key={title} className="suggestion" onClick={() => setInput(prompt)} title={prompt}>

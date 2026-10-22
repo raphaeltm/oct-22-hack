@@ -10,9 +10,10 @@ import { CompanyPage } from './components/CompanyPage';
 import { AutopilotPage } from './components/Autopilot';
 import { Landing } from './components/Landing';
 import { Hackathon } from './components/Hackathon';
+import { HackathonPitch } from './components/HackathonPitch';
 import { LoginPage, RequireAuth } from './Login';
 import { ConsentPage } from './Consent';
-import { PartnersPage } from './components/Partners';
+import { BidTogetherPage } from './components/BidTogether';
 import { JoinFromInvitePage, PartnerRespondPage } from './components/PartnerRespond';
 
 export function App() {
@@ -21,7 +22,8 @@ export function App() {
       <Routes>
         {/* Public */}
         <Route index element={<Landing />} />
-        <Route path="hackathon" element={<Hackathon />} />
+        <Route path="hackathon" element={<HackathonPitch />} />
+        <Route path="hackathon/full" element={<Hackathon />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="oauth/consent" element={<ConsentPage />} />
         {/* Partner invite response (token-scoped, no login) and joining Radar from it */}
@@ -45,7 +47,7 @@ export function App() {
           <Route path="tenders/:id" element={<TenderDetailPage />} />
           <Route path="competitors" element={<CompetitorsPage />} />
           <Route path="competitors/:id" element={<CompetitorDetailPage />} />
-          <Route path="partners" element={<PartnersPage />} />
+          <Route path="partners" element={<BidTogetherPage />} />
           <Route path="company" element={<CompanyPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

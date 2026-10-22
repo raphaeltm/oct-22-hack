@@ -213,7 +213,7 @@ function buildSlides(): SlideDef[] {
       dark: true,
       tags: ['C5'],
       notes:
-        'Open with the one-liner: "a platform that helps small French IT firms find the partners to bid together". Be clear that the radar underneath is live and the partner finder is what we are building now.',
+        'Open with the one-liner: "a platform that helps small French IT firms find the partners to bid together". The radar and the partner finder are both live on dev; scores are heuristics.',
       body: (
         <div className="hk-title">
           <p className="hk-kicker">Future Founders · Data-Centric Agents · 22 Oct 2026</p>
@@ -284,10 +284,10 @@ function buildSlides(): SlideDef[] {
               <Stat value={fmt(SNAPSHOT.tedTotal)} label="French IT notices on TED since Jan 2025 (CPV 72*)" />
               <Stat value={fmt(SNAPSHOT.awardNotices)} label="award notices naming the winners" />
               <Stat value={fmt(SNAPSHOT.open)} label="tenders open right now" />
-              <Stat value="155" label="award notices with a multi-company bidder (groupement)" />
+              <Stat value="199" label="award notices with a joint bid (groupement)" />
             </div>
             <p className="hk-foot">
-              {SNAP}. Counts from our Postgres; the TED total matches TED's own API (see “Proof”). Groupements: TED API, 12:35 UTC.
+              {SNAP}. Counts from our Postgres; the TED total matches TED's own API (see “Proof”). Groupements: TED's party-leader flag, checked 13:15 UTC.
             </p>
           </div>
         </div>
@@ -374,7 +374,7 @@ function buildSlides(): SlideDef[] {
             </ol>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Ideas we dropped, and why</p>
+            <p className="hk-kicker">Ideas we dropped or parked, and why</p>
             <table className="hk-table">
               <tbody>
                 <tr>
@@ -401,6 +401,14 @@ function buildSlides(): SlideDef[] {
                   <td>SWOT generator (#14)</td>
                   <td>The Autopilot dossier already covers it with sourced facts.</td>
                 </tr>
+                <tr>
+                  <td>Renewal radar (predict re-tenders)</td>
+                  <td>Strong, but award data starts in 2025, so we can't backtest it yet.</td>
+                </tr>
+                <tr>
+                  <td>Company-ID map, BODACC, SecNumCloud list</td>
+                  <td>Good add-ons, not an edge. We now store SIRET from the joint-bid notices, which lays the ground for them.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -411,9 +419,9 @@ function buildSlides(): SlideDef[] {
       id: 'edge',
       title: 'The pivot: bid together',
       tags: ['C1', 'C3', 'C5'],
-      labels: ['planned'],
+      labels: ['live', 'snapshot'],
       notes:
-        'A mentor told us we had no edge. Our answer comes from the data: French buyers let SMEs bid together as a groupement, and TED records those groups. The partner finder is being designed now; the count on this slide is real, the feature is not built yet.',
+        'A mentor told us we had no edge. Our answer comes from the data: French buyers let SMEs bid together as a groupement, and TED records those groups. We built the partner finder in the next 25 minutes; it is live on dev (merged 12:53 UTC).',
       body: (
         <div className="hk-split hk-split-wide">
           <div>
@@ -427,12 +435,12 @@ function buildSlides(): SlideDef[] {
               groups into plain winners and throw the signal away.
             </p>
             <div className="hk-stats hk-stats-row">
-              <Stat value="155" label="French IT award notices since 2025 with a multi-company bidder" />
+              <Stat value="199" label="French IT award notices since 2025 flagging a multi-company bid" />
               <Stat value={fmt(SNAPSHOT.awardNotices)} label="award notices checked" />
             </div>
             <p className="hk-foot">
-              Counted from TED's API at 12:35 UTC: a bidding party with more member companies than party names (a heuristic;
-              some may be subcontracting). Examples:{' '}
+              Counted from TED's API at 13:15 UTC: award notices whose <code>tendering-party-leader</code> flag marks a
+              multi-member party. Radar reads these notices' XML to store each group, its lead and members. Examples:{' '}
               <a href={TED('17241-2025')} target="_blank" rel="noreferrer">17241-2025</a> “GRP KSHUTTLE” = Deloitte Conseil + KSHUTTLE
               for SNCF;{' '}
               <a href={TED('4575-2025')} target="_blank" rel="noreferrer">4575-2025</a> ENGIT + MEJA (co-traitance) for the
@@ -440,7 +448,7 @@ function buildSlides(): SlideDef[] {
             </p>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Partner finder (being built now, not in the demo)</p>
+            <p className="hk-kicker">Partner finder (live on dev since 12:53)</p>
             <ol className="hk-steps">
               <li>
                 <b>Find:</b> for a tender, rank firms that fill your gaps, have bid jointly before, know this buyer and don't
@@ -469,7 +477,7 @@ function buildSlides(): SlideDef[] {
       id: 'foundation',
       title: 'What the platform stands on',
       tags: ['C2', 'C3'],
-      labels: ['live', 'planned'],
+      labels: ['live'],
       notes:
         'The pivot does not throw work away. Every partner-finder step reuses something that already runs on dev. Be precise about which column is live.',
       body: (
@@ -480,8 +488,8 @@ function buildSlides(): SlideDef[] {
           <table className="hk-table hk-table-big">
             <thead>
               <tr>
-                <th>Partner-finder step (planned)</th>
-                <th>Already running on dev</th>
+                <th>Partner-finder step</th>
+                <th>Built on</th>
               </tr>
             </thead>
             <tbody>
@@ -497,7 +505,7 @@ function buildSlides(): SlideDef[] {
           </table>
           <p className="hk-callout">
             Live today: a pre-bid dossier for a tender worth more than €1M already tells a small firm to consider a groupement
-            or subcontracting. What's missing is <i>who</i> to call. That's the partner finder.
+            or subcontracting, and the partner finder now answers <i>who</i> to call, with TED evidence for each name.
           </p>
         </div>
       ),
@@ -636,7 +644,7 @@ function buildSlides(): SlideDef[] {
             </div>
           </div>
           <div className="hk-card">
-            <p className="hk-kicker">Copilot: Mastra + Claude, 12 tools</p>
+            <p className="hk-kicker">Copilot: Mastra + Claude, 15 tools</p>
             <ul className="hk-tools">
               {TOOLS.map((t) => (
                 <li key={t[0]}>
@@ -645,7 +653,7 @@ function buildSlides(): SlideDef[] {
               ))}
             </ul>
             <p className="hk-foot">
-              Plus three helper agents (match rationales, dossier memo, competitor research). All 12 tools are also exposed
+              Plus three helper agents (match rationales, dossier memo, competitor research). All the tools are also exposed
               over an <b>MCP server with OAuth 2.1</b>, so you can use Radar from Claude or ChatGPT.
             </p>
           </div>
@@ -665,12 +673,12 @@ function buildSlides(): SlideDef[] {
             One journey, <em>start to finish.</em>
           </h2>
           <div className="hk-journey">
-            <Shot src="autopilot" step="1" caption="Autopilot inbox: 22 dossiers built without being asked; Go first." />
-            <Shot src="dossier" step="2" caption="A dossier: verdict, calendar, criteria, likely bidders, draft questions in French." />
-            <Shot src="competitors" step="3" caption="Competitors ranked from real award notices, not seeded." />
-            <Shot src="tenders" step="4" caption="Matched tenders with a fit score and a one-line reason." />
+            <Shot src="bid-together" step="1" caption="Bid together: matched tenders that need a partner, with the missing capability named." />
+            <Shot src="opportunity" step="2" caption="An opportunity: why it fits, and the gap flagged from the French notice." />
+            <Shot src="partner-finder" step="3" caption="Partner finder: firms that fill the gap, with TED awards and joint bids as evidence." />
+            <Shot src="autopilot" step="4" caption="Autopilot: pre-bid dossiers built without being asked." />
           </div>
-          <p className="hk-foot">Screenshots of the dev deployment, 22 Oct 2026 ~11:55 UTC, demo user. Try it yourself: last slide.</p>
+          <p className="hk-foot">Screenshots of the dev deployment, 22 Oct 2026 ~13:20 UTC, demo user. Try it yourself: last slide.</p>
         </div>
       ),
     },
@@ -913,7 +921,7 @@ function buildSlides(): SlideDef[] {
               Sign in with <code>demo@rivage-numerique.fr</code> / <code>rivage-demo-2026</code> (a fictional company; the data is real).
             </li>
             <li>
-              Ask: <i>“What should we bid on this month?”</i>, <i>“Which open tenders are too big for us alone?”</i>, or open Autopilot and press
+              Ask: <i>“What should we bid on this month?”</i>, <i>“Which open tenders are too big for us alone?”</i>, open any tender's <b>Partner finder</b>, or open Autopilot and press
               <b> Skip…</b> to watch it learn.
             </li>
           </ol>
@@ -950,7 +958,7 @@ const FOUNDATION: [string, string][] = [
   ['Spot the tender you can\'t do alone', 'Matching on CPV, text, buyer and region; Autopilot dossiers flag scope and size gaps.'],
   ['Find partners who fill the gap', 'Award index of 2,610 notices with winners merged across name variants; ranking by buyer, CPV, text and recency.'],
   ['Check they are real and relevant', 'Keenable web research on any company, saved with sources.'],
-  ['Draft the approach in French', 'Claude agent with 12 tools already writes French buyer questions and memos from sourced facts.'],
+  ['Draft the approach in French', 'The Claude agent writes French buyer questions and memos from sourced facts.'],
   ['Learn who answers and who wins', 'Feedback rules and a prediction scorecard graded against real TED awards.'],
   ['Bring partners onto the platform', 'Sign-up, one company profile per user built by chat, MCP access from Claude or ChatGPT.'],
 ];
@@ -970,7 +978,7 @@ const FLOW = [
   { k: 'BullMQ on Redis', d: 'Idempotent import every 6 h; research and Autopilot jobs with retries.' },
   { k: 'Postgres', d: 'Tenders, awards, merged organisations, French full-text search, predictions, memory.' },
   { k: 'Matching + rivals', d: 'CPV depth, text, buyer and region signals; award-history ranking with recency.' },
-  { k: 'Mastra + Claude', d: '12 tools, user-scoped; Keenable web search for competitor research.' },
+  { k: 'Mastra + Claude', d: '15 tools, user-scoped; Keenable web search for competitor research.' },
   { k: 'Redis Streams → SSE', d: 'Answers and job progress stream live to the UI; reconnect-safe.' },
 ];
 
@@ -993,6 +1001,7 @@ const TOOLS: [string, string][] = [
   ['researchCompetitors / getResearchNotes', 'Keenable web research'],
   ['getPrebidDossier / getAutopilotInbox', 'Autopilot output'],
   ['recordTenderDecision', 'feedback that re-ranks'],
+  ['findPartners / draftPartnerInvite / listPartnerInvites', 'joint-bid partners, outreach, replies'],
 ];
 
 const HITS = [
@@ -1008,7 +1017,8 @@ const STATUS = {
     'Login, one company per user, profile built by chat',
     'Tender matching with reasons; French full-text search',
     'Competitors from real awards, merged across name variants',
-    'Copilot chat with 12 tools, streamed over SSE',
+    'Copilot chat with 15 tools, streamed over SSE',
+    'Partner finder: joint bids parsed from TED XML, gap detection, ranked partners with evidence, French invite drafts, public reply page, scored replies',
     'Autopilot dossiers, live predictions, grading, learned rules',
     'Backtest vs baseline scorecard in the product',
     'Deployed with Docker Compose on dev (SAM)',
@@ -1019,6 +1029,7 @@ const STATUS = {
     'Imports re-read everything since 2025 (not incremental)',
     'Backtest and job events are global, not per company',
     'Without a model key, chat falls back to a stub',
+    'Joint-bid evidence is sparse (a few % of award notices) and most winners publish no contact email, so the user adds it',
     'MCP server: OAuth discovery and client registration answer on dev; a full Claude session timed out in an earlier test and has not been re-verified',
   ],
   no: [
@@ -1026,15 +1037,14 @@ const STATUS = {
     'BOAMP and DECP sources',
     'Automated test suite (we typecheck, build and browser-test)',
     'Citation checking and per-user rate limits (#30)',
-    'Partner finder, the core of the pivot: designed, being built, not in the demo',
   ],
 };
 
 const ROADMAP = [
   {
-    when: 'Building now',
-    h: 'Partner finder',
-    items: ['Import TED joint-bid groups (group → members, lead)', 'Score partners per tender; agent drafts the French outreach, you send it', 'Score replies; invite → claim profile → network effect'],
+    when: 'Next for partners',
+    h: 'Grow the network',
+    items: ['Pilot with real agencies: invites → replies → joint bids won', 'Older joint-bid history from DECP', 'Alert firms when a tender needs exactly their skills'],
   },
   {
     when: 'Next week',
@@ -1177,7 +1187,7 @@ function LiveCheck() {
       {live.state === 'signed-out' && (
         <p>
           Health: {live.health ? 'ok' : 'not ok'}. The data API needs a session.{' '}
-          <Link to={`/login?demo=1&next=${encodeURIComponent('/hackathon#proof')}`}>Sign in as the demo user</Link>, then come
+          <Link to={`/login?demo=1&next=${encodeURIComponent('/hackathon/full#proof')}`}>Sign in as the demo user</Link>, then come
           back and run it again.
         </p>
       )}

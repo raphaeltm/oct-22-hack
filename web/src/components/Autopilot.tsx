@@ -93,7 +93,7 @@ export function AutopilotPage() {
         {dossiers.length === 0 ? (
           <div className="card empty-card">
             <p>No dossiers yet. The autopilot runs after each TED import and whenever matches are refreshed.</p>
-            <Link className="btn secondary" to="/tenders">See matched tenders</Link>
+            <Link className="btn secondary" to="/tenders">See opportunities</Link>
           </div>
         ) : (
           <ul className="tender-list">
