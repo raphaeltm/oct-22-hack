@@ -419,10 +419,12 @@ export async function competitorProfile(organisationId: string, companyId?: stri
 
 // Generic procurement words that say nothing about what is being bought.
 const TITLE_STOP = new Set(
-  'marche marches public publics prestation prestations service services accord cadre accords relatif relative relatifs ' +
-    'realisation fourniture fournitures mise place dans cadre pour lot lots ville commune departement region metropole ' +
-    'agglomeration communaute direction besoins ensemble associes associees concernant annee annees conseil generale general'
-    .split(' '),
+  (
+    'marche marches public publics prestation prestations service services accord cadre accords relatif relative relatifs ' +
+    'realisation fourniture fournitures mise place oeuvre dans pour lot lots ville commune departement region metropole ' +
+    'agglomeration communaute direction besoins ensemble associes associees concernant annee annees conseil generale general ' +
+    'solution solutions'
+  ).split(' '),
 );
 const titleTokens = (s: string) => new Set(fold(s).split(' ').filter((w) => w.length >= 5 && !TITLE_STOP.has(w)));
 

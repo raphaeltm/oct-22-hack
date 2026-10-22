@@ -185,7 +185,8 @@ export type InboxItem = {
   seenAt: string | null;
   createdAt: string;
   verdict: Verdict | null;
-  incumbent: string | null;
+  /** Winner of the buyer's last similar award (not necessarily the incumbent). */
+  lastSimilarWinner: string | null;
   criteria: number;
   title: string;
   buyerName: string | null;

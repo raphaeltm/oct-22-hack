@@ -312,7 +312,11 @@ export async function buildDossier(company: CompanyRow, tenderId: string): Promi
     checklist.push({ item: 'Consider a groupement (co-contracting) or subcontracting (DC4)', note: `Estimated value ${fmtEur(value)} is large for a ${company.size} firm.` });
   }
 
-  const recommendation = recommend({ score: match.rows[0]?.score ?? null, daysLeft, requirements, incumbent, value, learned: learnedRules, market });
+  const textSignal = match.rows[0]?.signals?.text;
+  const recommendation = recommend({
+    score: match.rows[0]?.score ?? null,
+    keywordHit: typeof textSignal === 'number' ? textSignal > 0 : null,
+    daysLeft, requirements, incumbent, value, learned: learnedRules, market });
 
   const dossier: Dossier = {
     version: 1,
@@ -385,6 +389,8 @@ export async function buildDossier(company: CompanyRow, tenderId: string): Promi
 
 function recommend(x: {
   score: number | null;
+  /** Does the notice text mention the profile's keywords (null = unknown)? */
+  keywordHit: boolean | null;
   daysLeft: number | null;
   requirements: Requirement[];
   incumbent: Dossier['incumbent'];
@@ -395,6 +401,7 @@ function recommend(x: {
   const pros: string[] = [];
   const cons: string[] = [];
   if (x.score != null) (x.score >= 50 ? pros : x.score < 35 ? cons : pros).push(`Fit score ${Math.round(x.score)}/100${x.score < 35 ? ' is low' : ''}`);
+  if (x.keywordHit === false) cons.push('The notice text mentions none of your services; the match rests on the CPV code only');
   const covered = x.requirements.filter((r) => r.covered);
   const unknown = x.requirements.filter((r) => r.covered == null);
   if (covered.length) pros.push(`Your profile covers ${covered.map((r) => r.label).join(', ')}`);
@@ -409,7 +416,7 @@ function recommend(x: {
   const verdict: Dossier['recommendation']['verdict'] =
     (x.daysLeft != null && x.daysLeft < 5) || (x.score != null && x.score < 30) || negativeLearned
       ? 'no-go'
-      : x.score != null && x.score >= 55 && (x.daysLeft == null || x.daysLeft >= 10) && unknown.length <= 1
+      : x.score != null && x.score >= 55 && x.keywordHit !== false && (x.daysLeft == null || x.daysLeft >= 10) && unknown.length <= 1
         ? 'go'
         : 'consider';
   return { verdict, reasons: [...pros.map((p) => `+ ${p}`), ...cons.map((c) => `− ${c}`)] };
@@ -450,7 +457,7 @@ async function polish(company: CompanyRow, d: Dossier, noticeText: string) {
     name: 'Pre-bid dossier writer',
     instructions:
       'You are a bid manager at a small French IT consultancy. From the JSON facts given (and only those), write:\n' +
-      '1. "memo": a go/no-go memo in English, 4-6 short markdown bullets, starting with the verdict in bold. Be concrete: name the buyer, the criteria weights, the previous supplier (who won the buyer’s last similar contract), the deadline, and the 1-2 strongest bid angles from the company profile. Never call the previous supplier the incumbent as a fact: our award data starts in 2025. Never invent numbers, references or certifications.\n' +
+      '1. "memo": a go/no-go memo in English, 4-6 short markdown bullets. The first bullet starts with the verdict from rulesVerdict.verdict in bold (**Go**, **Consider** or **No-go**); do not change it, explain it. Be concrete: name the buyer, the criteria weights, the previous supplier (who won the buyer’s last similar contract), the deadline, and the 1-2 strongest bid angles from the company profile. Never call the previous supplier the incumbent as a fact: our award data starts in 2025. Never invent numbers, references or certifications.\n' +
       '2. "questions": 2-4 clarification questions to send to the buyer, in formal French, each with a short English gloss. Ask about real gaps in the facts (missing weights, volumes, incumbent handover, hosting/security requirements).\n' +
       'Return ONLY JSON: {"memo": string, "questions": [{"fr": string, "en": string}]}',
     model: process.env.MODEL ?? 'anthropic/claude-sonnet-5',
@@ -515,7 +522,7 @@ export async function listDossiers(companyId: string, limit = 30) {
     `SELECT d.tender_id AS "tenderId", d.status, d.trigger, d.score, d.error, d.seen_at AS "seenAt",
        d.created_at AS "createdAt", d.updated_at AS "updatedAt",
        d.content->'recommendation'->>'verdict' AS verdict,
-       d.content->'incumbent'->>'name' AS incumbent,
+       d.content->'incumbent'->>'name' AS "lastSimilarWinner",
        jsonb_array_length(coalesce(d.content->'criteria'->'items', '[]'::jsonb)) AS criteria,
        t.title, t.buyer_name AS "buyerName", t.publication_number AS "publicationNumber", t.deadline,
        t.estimated_value::float8 AS "estimatedValue", f.decision, f.reason
