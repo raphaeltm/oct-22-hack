@@ -69,7 +69,7 @@ const LABELS = {
   insight: 'Of 2,610 French IT award notices since 2025 · counted from TED’s party-leader flag, 22 Oct 2026',
   gap: 'Gaps and quotes from the TED notice, matched against the demo profile',
   partners: 'Fit is a heuristic for ordering a shortlist, not a probability · a past award is evidence, not proof of interest',
-  outreach: "Radar's draft for this tender and partner · it never sends email on its own",
+  outreach: 'Demo draft from the fictional Rivage Numérique · never sent · Radar never emails anyone on its own',
   replies: 'Response score is a heuristic for triage, not a guarantee',
 };
 
