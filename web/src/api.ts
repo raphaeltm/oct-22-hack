@@ -1,7 +1,6 @@
-// Typed API client for the Hono routes (server/src/routes/data.ts).
-// Endpoints that are still being built (/api/matches, /api/tenders/:id/competitors)
-// fall back to mock data (web/src/mocks.ts) when they fail. Real endpoints only
-// fall back for ids that belong to the mock data, so links from mock views work.
+// Typed API client for the Hono routes (server/src/routes/data.ts, routes/matches.ts).
+// Tender and competitor detail fall back to mock data (web/src/mocks.ts) only for
+// ids that belong to the mock data, so old links from mock views still work.
 import * as mocks from './mocks';
 import { signOut } from './auth';
 
@@ -52,7 +51,15 @@ export type Award = {
   tender?: Pick<Tender, 'id' | 'title' | 'buyerName' | 'publicationNumber' | 'url'> | null;
 };
 
-export type Match = { tender: Tender; score: number; rationale: string | null };
+export type Match = {
+  tender: Tender;
+  score: number;
+  rationale: string | null;
+  /** 'recent' = recently published but the deadline passed or is not stated. */
+  status: 'open' | 'recent';
+};
+
+export type MatchRefresh = { matches: Match[]; notes: string[]; polished: boolean };
 
 export type CompetitorSummary = {
   id: string;
@@ -81,11 +88,34 @@ export type CompetitorDetail = CompetitorSummary & {
   notes: ResearchNote[];
 };
 
-export type TenderCompetitor = CompetitorSummary & { winsWithBuyer: number };
+export type CompetitorExample = {
+  tenderId: string;
+  publicationNumber: string;
+  title: string;
+  buyer: string | null;
+  date: string | null;
+  value: number | null;
+  coWinners: number;
+  sameBuyer: boolean;
+  url: string | null;
+};
+
+export type TenderCompetitor = CompetitorSummary & {
+  winsWithBuyer: number;
+  /** Won a similar contract from this buyer before. */
+  incumbent: boolean;
+  /** Wins as one of 5+ holders of a framework (weaker signal). */
+  frameworkWins: number;
+  score: number;
+  why: string | null;
+  aliases: string[];
+  examples: CompetitorExample[];
+};
 
 export type TenderCompetitors = {
   competitors: TenderCompetitor[];
   buyerAwards: Award[];
+  notes: string[];
 };
 
 export type Me = { user: User | null; company: Company | null };
@@ -250,17 +280,21 @@ export const api = {
       mocks.getTender(id) ? () => mocks.getTender(id)! : null,
     ),
 
-  matches: () =>
-    withFallback<Match[]>(
-      '/api/matches',
-      (r) =>
-        arr<any>(r.matches ?? r).map((m) => ({
-          tender: remember(toTender(m.tender ?? m)),
-          score: normaliseScore(Number(m.score ?? 0)),
-          rationale: m.rationale ?? null,
-        })),
-      () => mocks.matches,
-    ),
+  matches: () => withFallback<Match[]>('/api/matches', (r) => arr<any>(r.matches ?? r).map(toMatch), null),
+
+  /** Recompute and save the shortlist for the user's company. */
+  refreshMatches: async (): Promise<MatchRefresh> => {
+    const res = await fetch('/api/matches/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: '{}',
+    });
+    if (res.status === 401) onUnauthorized();
+    if (!res.ok) throw new HttpError(res.status);
+    const r = await res.json();
+    return { matches: arr<any>(r.matches).map(toMatch), notes: arr<string>(r.notes), polished: Boolean(r.polished) };
+  },
 
   competitors: (params: { q?: string; limit?: number } = {}) => {
     const qs = new URLSearchParams();
@@ -294,20 +328,12 @@ export const api = {
       mocks.getCompetitor(id) ? () => mocks.getCompetitor(id)! : null,
     ),
 
-  tenderCompetitors: async (id: string, tender?: Tender): Promise<Result<TenderCompetitors>> => {
-    if (mocks.getTender(id) || !tender) {
-      return withFallback(`/api/tenders/${encodeURIComponent(id)}/competitors`, normaliseBrief, () =>
-        mocks.tenderCompetitors(id, tenderCache.get(id)?.buyerName ?? null),
-      );
-    }
-    try {
-      return { data: normaliseBrief(await getJson(`/api/tenders/${encodeURIComponent(id)}/competitors`)), mock: false };
-    } catch (err) {
-      if (err instanceof HttpError && err.status === 401) throw err;
-      // Endpoint not ready yet: derive the brief from the real award data.
-      return { data: await deriveBrief(tender), mock: false };
-    }
-  },
+  tenderCompetitors: (id: string) =>
+    withFallback<TenderCompetitors>(
+      `/api/tenders/${encodeURIComponent(id)}/competitors`,
+      normaliseBrief,
+      mocks.getTender(id) ? () => mocks.tenderCompetitors(id, tenderCache.get(id)?.buyerName ?? null) : null,
+    ),
 
   /** Queues agent research on a competitor; progress arrives on /api/jobs/events. */
   research: async (id: string, force = true): Promise<{ jobId?: string }> => {
@@ -323,68 +349,32 @@ export const api = {
   },
 };
 
+function toMatch(m: any): Match {
+  const tender = remember(toTender(m.tender ?? { ...m, id: m.tenderId ?? m.id }));
+  return {
+    tender,
+    score: normaliseScore(Number(m.score ?? 0)),
+    rationale: m.rationale ?? null,
+    status: m.status === 'recent' ? 'recent' : 'open',
+  };
+}
+
 function normaliseBrief(r: any): TenderCompetitors {
   return {
     competitors: arr<any>(r.competitors ?? r).map((c) => ({
       ...toCompetitor(c),
-      winsWithBuyer: Number(c.winsWithBuyer ?? c.buyerWins ?? 0),
+      buyers: num(c.buyers ?? c.distinctBuyers),
+      winsWithBuyer: Number(c.winsWithBuyer ?? c.sameBuyerWins ?? c.buyerWins ?? 0),
+      incumbent: Boolean(c.incumbent),
+      frameworkWins: Number(c.frameworkWins ?? 0),
+      score: Number(c.score ?? 0),
+      why: c.why ?? null,
+      aliases: arr<string>(c.aliases),
+      examples: arr<CompetitorExample>(c.examples),
     })),
     buyerAwards: arr<any>(r.buyerAwards ?? r.pastAwards ?? r.awards).map(toAward),
+    notes: arr<string>(r.notes),
   };
-}
-
-/**
- * Client-side competitor brief from the real data routes: the buyer's past award
- * notices and their winners, topped up with the overall market leaders.
- */
-async function deriveBrief(tender: Tender): Promise<TenderCompetitors> {
-  const buyerAwards: Award[] = [];
-  if (tender.buyerName) {
-    const search = await getJson(
-      `/api/tenders?${new URLSearchParams({ q: tender.buyerName, type: 'can-standard', limit: '40' })}`,
-    );
-    const buyer = tender.buyerName.toLowerCase();
-    const past = arr<any>(search.tenders)
-      .map(toTender)
-      .filter((t) => t.id !== tender.id && t.buyerName?.toLowerCase() === buyer)
-      .slice(0, 12);
-    const details = await Promise.all(past.map((t) => getJson(`/api/tenders/${t.id}`).catch(() => null)));
-    details.forEach((d, i) => {
-      const t = past[i]!;
-      const list = arr<any>(d?.awards);
-      for (const a of list) {
-        const award = toAward(a);
-        buyerAwards.push({
-          ...award,
-          tenderId: t.id,
-          awardDate: award.awardDate ?? t.publicationDate,
-          coWinners: list.length,
-          tender: { id: t.id, title: t.title, buyerName: t.buyerName, publicationNumber: t.publicationNumber, url: t.url },
-        });
-      }
-    });
-  }
-  buyerAwards.sort((a, b) => (b.awardDate ?? '').localeCompare(a.awardDate ?? ''));
-
-  const withBuyer = new Map<string, number>();
-  for (const a of buyerAwards) if (a.organisationId) withBuyer.set(a.organisationId, (withBuyer.get(a.organisationId) ?? 0) + 1);
-  const topIds = [...withBuyer.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([id]) => id);
-
-  const fromBuyer = await Promise.all(
-    topIds.map((id) => getJson(`/api/competitors/${id}`).then(toCompetitor).catch(() => null)),
-  );
-  const competitors: TenderCompetitor[] = fromBuyer
-    .filter((c): c is CompetitorSummary => c != null)
-    .map((c) => ({ ...c, winsWithBuyer: withBuyer.get(c.id) ?? 0 }));
-
-  if (competitors.length < 3) {
-    const leaders = await getJson('/api/competitors?limit=6').catch(() => ({ competitors: [] }));
-    for (const c of arr<any>(leaders.competitors).map(toCompetitor)) {
-      if (competitors.length >= 3) break;
-      if (!competitors.some((x) => x.id === c.id)) competitors.push({ ...c, winsWithBuyer: 0 });
-    }
-  }
-  return { competitors, buyerAwards };
 }
 
 function sum(values: (number | null)[]) {

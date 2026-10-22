@@ -20,11 +20,7 @@ import {
 export function TenderDetailPage() {
   const { id = '' } = useParams();
   const detail = useApi(() => api.tender(id), [id]);
-  const tenderData = detail.data?.tender;
-  const brief = useApi(
-    () => (tenderData ? api.tenderCompetitors(id, tenderData) : new Promise<never>(() => {})),
-    [id, tenderData],
-  );
+  const brief = useApi(() => api.tenderCompetitors(id), [id]);
   const matches = useApi(() => api.matches(), []);
   const [expanded, setExpanded] = useState(false);
 
@@ -125,7 +121,7 @@ export function TenderDetailPage() {
             <h3 className="sub-title">Likely competitors</h3>
             {brief.data.competitors.length > 0 && brief.data.competitors.every((c) => c.winsWithBuyer === 0) && (
               <p className="muted small brief-note">
-                No past awards from {tender.buyerName ?? 'this buyer'} in our data yet, so these are the most active winners overall.
+                No past awards from {tender.buyerName ?? 'this buyer'} in our data yet, so these are the firms that won the most similar contracts elsewhere.
               </p>
             )}
             {brief.data.competitors.length === 0 ? (
@@ -141,16 +137,35 @@ export function TenderDetailPage() {
                         <div className="muted small">Last win {formatDate(c.lastWin)}</div>
                       </div>
                     </div>
+                    {(c.incumbent || c.frameworkWins > 0) && (
+                      <div className="tender-foot">
+                        {c.incumbent && <span className="chip award">Likely incumbent</span>}
+                        {c.frameworkWins > 0 && <span className="chip muted">{c.frameworkWins} framework win{c.frameworkWins > 1 ? 's' : ''}</span>}
+                      </div>
+                    )}
                     <div className="competitor-card-stats">
                       <div><strong>{c.winsWithBuyer}</strong><span>with buyer</span></div>
-                      <div><strong>{c.wins}</strong><span>total wins</span></div>
+                      <div><strong>{c.wins}</strong><span>similar wins</span></div>
+                      <div><strong>{c.buyers ?? '—'}</strong><span>buyers</span></div>
                       <div><strong>{formatEur(c.totalValue, true)}</strong><span>won</span></div>
                     </div>
+                    {c.examples.length > 0 && (
+                      <ul className="small examples">
+                        {c.examples.slice(0, 2).map((e) => (
+                          <li key={e.tenderId}>
+                            <span lang="fr">{e.title}</span>
+                            <span className="muted"> · {e.buyer} · {formatDate(e.date)}{e.value != null ? ` · ${formatEur(e.value, true)}` : ''}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {c.summary && <p className="small muted clamp-3">{c.summary}</p>}
                   </Link>
                 ))}
               </div>
             )}
+
+            {brief.data.notes.length > 0 && <p className="muted small brief-note">{brief.data.notes[0]}</p>}
 
             <h3 className="sub-title">Past awards with {tender.buyerName ?? 'this buyer'}</h3>
             {brief.data.buyerAwards.length === 0 ? (

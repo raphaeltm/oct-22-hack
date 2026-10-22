@@ -51,7 +51,22 @@ export function TendersPage() {
 }
 
 function Matches() {
-  const { data, mock, loading, error } = useApi(() => api.matches(), []);
+  const { data, mock, loading, error, reload } = useApi(() => api.matches(), []);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState<string | null>(null);
+  const refresh = async () => {
+    setRefreshing(true);
+    setRefreshNote(null);
+    try {
+      const r = await api.refreshMatches();
+      setRefreshNote(r.notes.find((n) => n.includes('recent')) ?? r.notes[0] ?? null);
+      reload();
+    } catch (e) {
+      setRefreshNote(`Refresh failed: ${(e as Error).message}`);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<Sort>('score');
 
@@ -68,7 +83,7 @@ function Matches() {
     return [...list].sort((a, b) => key[sort](a) - key[sort](b));
   }, [data, q, sort]);
 
-  const strong = data?.filter((m) => m.score >= 80).length ?? 0;
+  const strong = data?.filter((m) => m.score >= 60).length ?? 0;
   const pipeline = data?.reduce((s, m) => s + (m.tender.estimatedValue ?? 0), 0) ?? 0;
   const closingSoon = data?.filter((m) => {
     const d = daysUntil(m.tender.deadline);
@@ -79,13 +94,14 @@ function Matches() {
     <>
       {mock && (
         <div className="notice info">
-          Match scoring is still being wired up, so these matches are sample data. Use <strong>Browse all</strong> for the real TED notices.
+          These matches are sample data. Use <strong>Browse all</strong> for the real TED notices.
         </div>
       )}
+      {refreshNote && <div className="notice info">{refreshNote}</div>}
       {data && (
         <div className="stats">
           <Stat label="Matched tenders" value={data.length} />
-          <Stat label="Strong fit" value={strong} hint="score ≥ 80" />
+          <Stat label="Strong fit" value={strong} hint="score ≥ 60" />
           <Stat label="Pipeline value" value={formatEur(pipeline, true)} hint="estimated" />
           <Stat label="Closing in 14 days" value={closingSoon} />
         </div>
@@ -103,6 +119,9 @@ function Matches() {
             </button>
           ))}
         </div>
+        <button className="btn secondary small" onClick={refresh} disabled={refreshing}>
+          {refreshing ? 'Refreshing…' : 'Refresh matches'}
+        </button>
       </div>
 
       {loading && !data && <Loading label="Loading matches…" />}
@@ -118,7 +137,7 @@ function Matches() {
   );
 }
 
-function TenderCard({ match: { tender, score, rationale } }: { match: Match }) {
+function TenderCard({ match: { tender, score, rationale, status } }: { match: Match }) {
   return (
     <li className="card tender-card">
       <ScoreRing score={score} />
@@ -134,6 +153,7 @@ function TenderCard({ match: { tender, score, rationale } }: { match: Match }) {
         {rationale && <p className="rationale">{rationale}</p>}
         <div className="tender-foot">
           <DeadlineChip deadline={tender.deadline} />
+          {status === 'recent' && <span className="chip muted" title="Recently published; deadline passed or not stated">Recent</span>}
           <span className="chip value">{formatEur(tender.estimatedValue)}</span>
           <span className="muted small">Due {formatDate(tender.deadline)}</span>
           <span className="spacer" />

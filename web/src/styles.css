@@ -225,10 +225,12 @@ input, textarea { font: inherit; color: inherit; }
 .competitor-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
 .competitor-card:hover { text-decoration: none; border-color: var(--accent); box-shadow: var(--shadow-lg); }
 .competitor-card-head { display: flex; gap: 10px; align-items: center; }
-.competitor-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 10px 0; border-block: 1px solid var(--border); }
+.competitor-card-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 10px 0; border-block: 1px solid var(--border); }
 .competitor-card-stats div { display: flex; flex-direction: column; align-items: center; }
 .competitor-card-stats strong { font-size: 16px; font-variant-numeric: tabular-nums; }
 .competitor-card-stats span { font-size: 11.5px; color: var(--text-3); }
+.competitor-card .examples { margin: 0; padding-left: 16px; display: grid; gap: 4px; }
+.competitor-card .examples li { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .initials { flex: none; display: inline-grid; place-items: center; border-radius: 9px; font-weight: 700; letter-spacing: 0.02em; }
 .name-cell { display: flex; gap: 10px; align-items: center; }
 .bar-cell { display: flex; align-items: center; gap: 10px; min-width: 160px; }

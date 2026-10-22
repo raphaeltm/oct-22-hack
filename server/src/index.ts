@@ -11,6 +11,7 @@ import { startWorkers } from './jobs/worker';
 import { mastra, memory } from './mastra';
 import { userRequestContext } from './mastra/context';
 import { data } from './routes/data';
+import { matchesRoutes } from './routes/matches';
 
 const hasModelKey = Boolean(process.env.ANTHROPIC_API_KEY);
 
@@ -48,6 +49,9 @@ async function threadAccess(threadId: string, userId: string) {
 }
 
 // Read-only TED data (tenders, competitors); behind the auth middleware above.
+// Matches + competitor intelligence; mounted before `data` so /competitors/relevant
+// and /competitors?forCompany=1 win over /competitors/:id.
+app.route('/api', matchesRoutes);
 app.route('/api', data);
 
 app.get('/api/threads/:threadId/messages', async (c) => {

@@ -1,4 +1,4 @@
-// Mock data for endpoints still being built (/api/matches and
+// Sample data, used only for links to mock ids (was the stand-in for /api/matches and
 // /api/tenders/:id/competitors). Buyers and winners are real French public
 // bodies and IT firms, but awards, amounts and notes are invented for the demo.
 import type {
@@ -267,6 +267,7 @@ export const matches: Match[] = open.map(({ score, rationale, ...tender }) => ({
   tender,
   score: Math.round((score ?? 0) * 100),
   rationale: rationale ?? null,
+  status: 'open' as const,
 }));
 
 export function getTender(id: string) {
@@ -300,8 +301,17 @@ export function tenderCompetitors(tenderId: string, buyerHint: string | null): T
   const withBuyer = new Map<string, number>();
   for (const a of buyerAwards) withBuyer.set(a.organisationId!, (withBuyer.get(a.organisationId!) ?? 0) + 1);
   const ranked = competitors()
-    .map((c) => ({ ...c, winsWithBuyer: withBuyer.get(c.id) ?? 0 }))
+    .map((c) => ({
+      ...c,
+      winsWithBuyer: withBuyer.get(c.id) ?? 0,
+      incumbent: (withBuyer.get(c.id) ?? 0) > 0,
+      frameworkWins: 0,
+      score: 0,
+      why: null,
+      aliases: [],
+      examples: [],
+    }))
     .sort((a, b) => b.winsWithBuyer - a.winsWithBuyer || b.wins - a.wins);
   // Buyer's past winners first, then the most active firms in the sector.
-  return { competitors: ranked.slice(0, Math.max(3, withBuyer.size)), buyerAwards };
+  return { competitors: ranked.slice(0, Math.max(3, withBuyer.size)), buyerAwards, notes: [] };
 }
