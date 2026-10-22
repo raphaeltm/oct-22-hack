@@ -154,8 +154,12 @@ const ProfileSchema = z.object({
 const profiler = new Agent({
   id: 'profiler',
   name: 'Profile builder',
-  instructions:
-    'You turn a short description of a company into a public-procurement search profile. Use real CPV 2008 codes. Infer sensible defaults when unsure.',
+  instructions: `You turn a short description of a company into a public-procurement search profile for TED.
+- Name: use the company name if given; otherwise a short plain description such as "Lyon accessibility studio". Never invent a brand name.
+- CPV: use real CPV 2008 codes only, preferring these when they fit (code: meaning):
+  72000000 IT services · 72200000 software programming and consultancy · 72212000 application software development · 72413000 website design · 72400000 internet services · 72300000 data services · 72322000 data management · 72500000 computer-related services · 72510000 IT management/hosting operations · 72267000 software maintenance · 72224000 IT project management consultancy · 72600000 computer support and consultancy · 48000000 software packages · 79411000 general management consultancy · 79400000 business and management consultancy · 79340000 advertising and marketing · 80500000 training · 71000000 architecture and engineering · 71300000 engineering services · 90700000 environmental services · 73000000 R&D.
+- Countries: only where the description says they work (ISO-3). Keywords: short phrases in those countries' languages.
+- Infer sensible contract-size defaults from the company size when not stated.`,
   model: MODEL,
 });
 

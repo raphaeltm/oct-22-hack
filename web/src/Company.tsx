@@ -258,7 +258,7 @@ export function Onboarding({ onCreated, onCancel }: { onCreated: (id: string) =>
           {error && <p className="error">{error}</p>}
           <div className="form-actions">
             <button className="btn btn-ink" type="submit" disabled={busy || description.trim().length < 20}>
-              {busy ? 'Building the profile…' : 'Build the profile'}
+              {busy ? 'Building the profile (about 20 seconds)…' : 'Build the profile'}
             </button>
             {onCancel && (
               <button className="link" type="button" onClick={onCancel}>
