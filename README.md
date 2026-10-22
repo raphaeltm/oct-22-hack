@@ -26,7 +26,7 @@ The scope is deliberately small so it can ship in about 5 hours.
 | Agent | [Mastra](https://mastra.ai) + Claude (Anthropic API) |
 | Web search | Keenable API |
 | Data | **Postgres for everything**: tenders, company profiles, agent memory, competitor research, and pgvector if we need embeddings |
-| Realtime | Redis Streams for chat run events, streamed to the UI over SSE |
+| Realtime / cache | Redis Streams for chat run events, streamed to the UI over SSE. Also available for search-result caching or background jobs if we need them |
 | API | Hono (`server/`) |
 | UI | Vite + React chat (`web/`) |
 | Infra | Docker Compose, both locally and for deploys |
