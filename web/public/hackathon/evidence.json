@@ -1,0 +1,312 @@
+{
+  "capturedAt": "2026-10-22T11:52:38Z",
+  "source": "dev deployment (SAM env 'dev'), signed in as the fictional demo user",
+  "tedApi": {
+    "endpoint": "POST https://api.ted.europa.eu/v3/notices/search",
+    "query": "buyer-country=FRA AND classification-cpv IN (72* 79411000) AND publication-date>=20250101 AND notice-type IN (cn-standard can-standard)",
+    "totalNoticeCount": 6939
+  },
+  "radarDb": {
+    "GET /api/tenders": {
+      "total": 6939,
+      "newest": {
+        "publicationNumber": "731322-2026",
+        "noticeType": "can-standard",
+        "title": "Marché de développement et de maintenance de la solution informatique de gestion du Registre National des Licences (RNL) pour l'Établissement public de sécurité ferroviaire (EPSF) - réf. 26.001_INFO.RNL",
+        "buyerName": "Ets Public Securité ferroviaire",
+        "cpvCodes": [
+          "72212900",
+          "72500000",
+          "72000000"
+        ],
+        "estimatedValue": 450000,
+        "publicationDate": "2026-10-21 22:00:00+00",
+        "url": "https://ted.europa.eu/en/notice/-/detail/731322-2026"
+      }
+    },
+    "GET /api/competitors (top 5 by wins)": [
+      {
+        "name": "CGI France",
+        "wins": 46,
+        "buyers": 40,
+        "totalValue": 139760014.55,
+        "lastWin": "2026-10-13 22:00:00+00"
+      },
+      {
+        "name": "CAPGEMINI TECHNOLOGY SERVICES",
+        "wins": 40,
+        "buyers": 34,
+        "totalValue": 680973245.95,
+        "lastWin": "2026-09-16 22:00:00+00"
+      },
+      {
+        "name": "CloudFerro S.A.",
+        "wins": 39,
+        "buyers": 1,
+        "totalValue": 0,
+        "lastWin": "2025-08-03 22:00:00+00"
+      },
+      {
+        "name": "SOPRA STERIA GROUP",
+        "wins": 38,
+        "buyers": 35,
+        "totalValue": 578695414,
+        "lastWin": "2026-10-05 22:00:00+00"
+      },
+      {
+        "name": "VSHN AG",
+        "wins": 38,
+        "buyers": 1,
+        "totalValue": 0,
+        "lastWin": "2025-08-03 22:00:00+00"
+      }
+    ]
+  },
+  "GET /api/autopilot/scorecard": {
+    "live": {
+      "predicted": 22,
+      "graded": 1,
+      "pending": 21,
+      "top5Hits": 1,
+      "incumbentGraded": 1,
+      "incumbentHits": 0
+    },
+    "backtest": {
+      "graded": 151,
+      "predicted": 150,
+      "top5Hits": 18,
+      "incumbentGraded": 35,
+      "incumbentHits": 1,
+      "avgWinners": 1.3
+    },
+    "baseline": {
+      "graded": 151,
+      "predicted": 151,
+      "top5Hits": 9
+    },
+    "examples": [
+      {
+        "tenderId": "c581657e-e627-4d21-9721-ceb2a8605a6d",
+        "publicationNumber": "316248-2026",
+        "title": "26075 Solution de vote électronique e-vote",
+        "buyerName": "Université de Picardie Jules Verne",
+        "url": "https://ted.europa.eu/en/notice/-/detail/316248-2026",
+        "awardUrl": "https://ted.europa.eu/en/notice/-/detail/601223-2026",
+        "source": "backtest",
+        "predicted": [
+          {
+            "name": "LEGAVOTE",
+            "hit": true
+          },
+          {
+            "name": "ORANGE BUSINESS SERVICES",
+            "hit": false
+          },
+          {
+            "name": "ENFRASYS",
+            "hit": false
+          },
+          {
+            "name": "INETUM",
+            "hit": false
+          },
+          {
+            "name": "CIRIL GROUP",
+            "hit": false
+          }
+        ],
+        "winners": [
+          "LEGAVOTE"
+        ]
+      },
+      {
+        "tenderId": "d3678dcf-fe86-41b1-aa86-46e31803ce17",
+        "publicationNumber": "327807-2026",
+        "title": "Tierce Maintenance Applicative relative au maintien opérationnel et à l'amélioration continue du système de gestion de financière du groupe KEDGE BS",
+        "buyerName": "KEDGE BUSINESS SCHOOL",
+        "url": "https://ted.europa.eu/en/notice/-/detail/327807-2026",
+        "awardUrl": "https://ted.europa.eu/en/notice/-/detail/619988-2026",
+        "source": "backtest",
+        "predicted": [
+          {
+            "name": "INETUM",
+            "hit": false
+          },
+          {
+            "name": "SOPRA STERIA GROUP",
+            "hit": true
+          },
+          {
+            "name": "CGI France",
+            "hit": false
+          },
+          {
+            "name": "WIZARDS TECHNOLOGIES",
+            "hit": false
+          },
+          {
+            "name": "kaora partners",
+            "hit": false
+          }
+        ],
+        "winners": [
+          "SOPRA STERIA GROUP"
+        ]
+      },
+      {
+        "tenderId": "d235ebaf-9e4f-442a-8b56-7cb114d9a642",
+        "publicationNumber": "343870-2026",
+        "title": "FOURNITURE DE SERVICE DE TELECOMMUNICATIONS",
+        "buyerName": "CAP Territoires (60)",
+        "url": "https://ted.europa.eu/en/notice/-/detail/343870-2026",
+        "awardUrl": "https://ted.europa.eu/en/notice/-/detail/692881-2026",
+        "source": "backtest",
+        "predicted": [
+          {
+            "name": "DELETEC",
+            "hit": false
+          },
+          {
+            "name": "BOUYGUES TELECOM",
+            "hit": true
+          },
+          {
+            "name": "SOCIETE FRANCAISE DU RADIOTELEPHONE - SFR",
+            "hit": false
+          },
+          {
+            "name": "LINKT",
+            "hit": true
+          },
+          {
+            "name": "ADIMEO",
+            "hit": false
+          }
+        ],
+        "winners": [
+          "BOUYGUES TELECOM",
+          "COVAGE",
+          "LINKT"
+        ]
+      },
+      {
+        "tenderId": "0f926513-daad-425c-98d6-bd8923c8aff5",
+        "publicationNumber": "374693-2026",
+        "title": "Accord-cadre de Services de Télécommunications",
+        "buyerName": "Mairie de Caudebec-lès-Elbeuf",
+        "url": "https://ted.europa.eu/en/notice/-/detail/374693-2026",
+        "awardUrl": "https://ted.europa.eu/en/notice/-/detail/553324-2026",
+        "source": "backtest",
+        "predicted": [
+          {
+            "name": "SOCIETE FRANCAISE DU RADIOTELEPHONE - SFR",
+            "hit": true
+          },
+          {
+            "name": "ORANGE SA",
+            "hit": false
+          },
+          {
+            "name": "ADIMEO",
+            "hit": false
+          },
+          {
+            "name": "BOUYGUES TELECOM",
+            "hit": false
+          },
+          {
+            "name": "FREE PRO",
+            "hit": false
+          }
+        ],
+        "winners": [
+          "SOCIETE FRANCAISE DU RADIOTELEPHONE - SFR"
+        ]
+      },
+      {
+        "tenderId": "22b6057c-9324-4ce6-935b-9ff35a420a11",
+        "publicationNumber": "379250-2026",
+        "title": "ACQUISITION, MAINTENANCE ET EVOLUTION D'EQUIPEMENTS DE SECURITE RESEAU ET DES POINTS DE TERMINAISONS",
+        "buyerName": "Euro-Métropole de Metz",
+        "url": "https://ted.europa.eu/en/notice/-/detail/379250-2026",
+        "awardUrl": "https://ted.europa.eu/en/notice/-/detail/692650-2026",
+        "source": "backtest",
+        "predicted": [
+          {
+            "name": "INETUM",
+            "hit": false
+          },
+          {
+            "name": "MASSELIN COMMUNICATION",
+            "hit": false
+          },
+          {
+            "name": "KAROS FRANCE",
+            "hit": false
+          },
+          {
+            "name": "EXAPROBE SAS",
+            "hit": false
+          },
+          {
+            "name": "SPIE ICS",
+            "hit": true
+          }
+        ],
+        "winners": [
+          "SPIE ICS"
+        ]
+      },
+      {
+        "tenderId": "a3c1bcae-4625-4be5-acd9-371b203d4f6a",
+        "publicationNumber": "482197-2026",
+        "title": "Prestations intellectuelles informatiques mises en oeuvre dans le cadre des évolutions du SI de l'Apec",
+        "buyerName": "APEC Siège PARIS",
+        "url": "https://ted.europa.eu/en/notice/-/detail/482197-2026",
+        "awardUrl": "https://ted.europa.eu/en/notice/-/detail/711169-2026",
+        "source": "backtest",
+        "predicted": [
+          {
+            "name": "CGI France",
+            "hit": true
+          },
+          {
+            "name": "ORANGE BUSINESS SERVICES",
+            "hit": true
+          },
+          {
+            "name": "ERNST ET YOUNG ADVISORY",
+            "hit": false
+          },
+          {
+            "name": "Rocket Software Technologies INC",
+            "hit": false
+          },
+          {
+            "name": "MEDI'A 2 B INGENIERIE",
+            "hit": false
+          }
+        ],
+        "winners": [
+          "ABAREZ",
+          "ADVYTEAM CONSULTING GROUP",
+          "B/ACCEPTANCE",
+          "CGI FRANCE",
+          "JEMS DATAFACTORY",
+          "Niji",
+          "OCEANE CONSULTING",
+          "ORANGE BUSINESS SERVICES",
+          "TAKIMA",
+          "ZENITY"
+        ]
+      }
+    ],
+    "notes": [
+      "Backtest: past TED tenders that now have an award notice (matched by eForms procedure id). Predictions use only award notices published before the tender; the target award is excluded.",
+      "Baseline: the 5 most frequent winners in the same CPV area before that date. Both are scored on the same tenders; a tender where a method made no prediction counts as a miss for it.",
+      "This measures whether past award data points to the eventual winner, not who actually bid (TED does not publish bidder lists) or whether you should bid. Multi-winner frameworks make hits easier.",
+      "Known limitation: the list of overly common words used for text matching is computed over all imported notices, including later ones.",
+      "Previous supplier: the winner of the buyer's most recent similar award. Award data starts in 2025, so the true predecessor of a multi-year contract is often older and missing."
+    ]
+  }
+}
