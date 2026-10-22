@@ -1,0 +1,13 @@
+{
+  "name": "radar-film",
+  "private": true,
+  "type": "module",
+  "description": "Source for the homepage film. Not part of the app build.",
+  "scripts": {
+    "stills": "node render.mjs --stills",
+    "render": "node render.mjs && node mix.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}

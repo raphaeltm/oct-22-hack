@@ -147,6 +147,11 @@ app.route('/api', jobsRoutes);
 app.route('/', mcpRoutes);
 
 // Serve the built frontend in production.
+// Hono has no MIME type for WebVTT, and Firefox ignores caption tracks served as octet-stream.
+app.use('/media/*', async (c, next) => {
+  await next();
+  if (c.req.path.endsWith('.vtt') && c.res.ok) c.res.headers.set('Content-Type', 'text/vtt; charset=utf-8');
+});
 app.use('/*', serveStatic({ root: './public' }));
 app.get('*', serveStatic({ path: './public/index.html' }));
 
