@@ -6,6 +6,7 @@ import { invalidateAwardIndex } from '../lib/competitors';
 import { buildDossier } from '../lib/dossier';
 import { gradePredictions, runBacktest } from '../lib/learning';
 import { refreshMatches } from '../lib/matching';
+import { partnerBacktest, runPartnerBacktest } from '../lib/partner-backtest';
 import { researchOrganisation, type ResearchResult } from '../lib/research';
 import {
   bullConnection,
@@ -98,6 +99,12 @@ async function processAutopilot(job: Job<AutopilotJobData>) {
     }
     return { companies: rows.length, dossiersQueued: queued };
   }
+  if (data.kind === 'partner-backtest') {
+    return runPartnerBacktest({
+      limit: data.limit,
+      onProgress: (done, total) => void reportProgress(job, { current: done, total, message: `Replaying ${done}/${total} joint bids` }),
+    });
+  }
   return runBacktest({
     limit: data.limit,
     onProgress: (done, total) => void reportProgress(job, { current: done, total, message: `Backtesting ${done}/${total} past tenders` }),
@@ -162,6 +169,9 @@ export async function startWorkers() {
   const { rows } = await pool.query(`SELECT 1 FROM predictions WHERE source = 'backtest' LIMIT 1`).catch(() => ({ rows: [1] }));
   if (!rows.length) {
     await enqueueAutopilot({ kind: 'backtest' }).catch((err) => console.error('[jobs] failed to queue backtest', err));
+  }
+  if (!(await partnerBacktest().catch(() => true))) {
+    await enqueueAutopilot({ kind: 'partner-backtest' }).catch((err) => console.error('[jobs] failed to queue partner backtest', err));
   }
   if (process.env.TED_IMPORT_SCHEDULE !== '0') {
     await scheduleTedImport().catch((err) => console.error('[jobs] failed to schedule ted-import', err));

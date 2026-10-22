@@ -339,6 +339,20 @@ export type PublicInvite = {
   expired: boolean;
 };
 
+/** GET /api/partners/backtest (server/src/lib/partner-backtest.ts) */
+export type PartnerBacktest = {
+  ranAt: string;
+  cases: number;
+  findable: number;
+  radar: { top3: number; top10: number };
+  baselineWinners: { top3: number; top10: number };
+  baselineJointBidders: { top3: number; top10: number };
+  avgPartners: number;
+  medianMs: number;
+  examples: { publicationNumber: string; title: string; buyer: string | null; date: string; url: string | null; lead: string; partners: string[]; rank: number | null; baselineRank: number | null; shortlist: string[] }[];
+  notes: string[];
+};
+
 export type PartnerResponseInput = {
   interest: 'yes' | 'maybe' | 'no';
   role?: PartnerRole | null;
@@ -627,6 +641,10 @@ export const api = {
     send('POST', `/api/partners/invites/${encodeURIComponent(id)}/sent`, { contactEmail }),
 
   deleteInvite: (id: string): Promise<{ ok: true }> => send('DELETE', `/api/partners/invites/${encodeURIComponent(id)}`),
+
+  /** Partner finder replayed on real TED joint bids; null until the first run finishes. */
+  partnerBacktest: () =>
+    withFallback<PartnerBacktest | null>('/api/partners/backtest', (r) => (r && typeof r.cases === 'number' ? (r as PartnerBacktest) : null), null),
 
   claimInvite: (token: string): Promise<{ companyId: string; created: boolean }> => send('POST', '/api/partners/claim', { token }),
 

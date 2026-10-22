@@ -570,3 +570,9 @@ button.link { padding: 0; border: 0; background: none; color: var(--accent); tex
 @media (max-width: 640px) {
   .section-head { flex-wrap: wrap; }
 }
+
+/* Partner finder backtest (Partners page) */
+.backtest-table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; }
+.backtest-table th, .backtest-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.backtest-table th { color: var(--text-2); font-weight: 500; }
+.backtest-table tbody tr:first-child td { font-weight: 600; }

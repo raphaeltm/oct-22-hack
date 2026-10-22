@@ -5,7 +5,9 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AuthVariables } from '../auth';
 import { redis } from '../events';
+import { enqueueAutopilot } from '../jobs/queues';
 import { claimFromInvite, createInvite, deleteInvite, listInvites, markSent, publicInvite, respond, ResponseInput, ROLES } from '../lib/invites';
+import { partnerBacktest } from '../lib/partner-backtest';
 import { partnersForTender } from '../lib/partners';
 import { getCompany } from '../mastra/tools/company';
 
@@ -20,6 +22,15 @@ partnersRoutes.get('/tenders/:id/partners', async (c) => {
   const limit = Math.min(Math.max(Number(c.req.query('limit')) || 8, 1), 20);
   const res = await partnersForTender(company, c.req.param('id'), limit);
   return res ? c.json(res) : c.json({ error: 'not found' }, 404);
+});
+
+// GET /api/partners/backtest  partner finder replayed on real joint bids (shared, market-wide)
+partnersRoutes.get('/partners/backtest', async (c) => c.json((await partnerBacktest()) ?? { status: 'not run' }));
+
+// POST /api/partners/backtest  re-run it in the background
+partnersRoutes.post('/partners/backtest', async (c) => {
+  const jobId = await enqueueAutopilot({ kind: 'partner-backtest' });
+  return c.json({ jobId }, 202);
 });
 
 // GET /api/partners/invites?tenderId=
