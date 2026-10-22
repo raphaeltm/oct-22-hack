@@ -1,16 +1,22 @@
+# Cachet production stack. Aiven Runtime reads this file: it builds `app` from the
+# Dockerfile and turns `db` (postgres image) and `cache` (valkey image) into managed
+# Aiven for PostgreSQL and Aiven for Valkey, injecting DATABASE_URL and VALKEY_URL.
+# Locally, `docker compose up` runs the same stack with plain containers.
 services:
   app:
     build: .
     environment:
       PORT: "3000"
-      DATABASE_URL: postgres://app:${POSTGRES_PASSWORD:-app}@db:5432/app
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD:-app}@db:5432/app
+      VALKEY_URL: redis://cache:6379
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       MODEL: ${MODEL:-anthropic/claude-sonnet-5}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SCORING_MODEL: ${SCORING_MODEL:-anthropic/claude-haiku-5-5}
+      SCAN_EVERY_MIN: ${SCAN_EVERY_MIN:-30}
     depends_on:
       db:
         condition: service_healthy
-      redis:
+      cache:
         condition: service_healthy
     ports:
       - "3000:3000"
@@ -24,10 +30,6 @@ services:
       POSTGRES_DB: app
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - target: 5432
-        published: 5432
-        mode: host
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app -d app"]
       interval: 5s
@@ -35,17 +37,12 @@ services:
       retries: 10
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+  cache:
+    image: valkey/valkey:8-alpine
     volumes:
-      - redisdata:/data
-    ports:
-      - target: 6379
-        published: 6379
-        mode: host
+      - cachedata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -53,4 +50,4 @@ services:
 
 volumes:
   pgdata:
-  redisdata:
+  cachedata:

@@ -3,8 +3,13 @@ import pg from 'pg';
 // App data (company profiles, tenders, scored matches, decisions) lives in
 // Postgres next to Mastra's memory tables. Schema is applied on boot.
 
-// For Aiven PostgreSQL use ...?sslmode=no-verify (TLS with Aiven's project CA).
-export const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://app:app@localhost:5432/app';
+// Aiven (Runtime injects DATABASE_URL) serves TLS with its project CA and a
+// libpq-style ?sslmode=require; node-postgres needs uselibpqcompat to read it that way.
+function withLibpqCompat(url: string) {
+  if (!/[?&]sslmode=/.test(url) || /[?&]uselibpqcompat=/.test(url)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}uselibpqcompat=true`;
+}
+export const DATABASE_URL = withLibpqCompat(process.env.DATABASE_URL ?? 'postgres://app:app@localhost:5432/app');
 export const pool = new pg.Pool({ connectionString: DATABASE_URL });
 
 export async function migrate() {

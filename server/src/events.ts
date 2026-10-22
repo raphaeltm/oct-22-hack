@@ -3,7 +3,8 @@ import { Redis } from 'ioredis';
 // Per-thread event log backed by Redis Streams. Writers XADD, SSE readers
 // XREAD BLOCK from their last seen id, so clients can resume after reconnects.
 
-const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
+// Aiven Runtime injects VALKEY_URL for Aiven for Valkey (Redis-compatible, rediss://).
+const REDIS_URL = process.env.VALKEY_URL ?? process.env.REDIS_URL ?? 'redis://localhost:6379';
 const MAX_LEN = 1000;
 
 export type ThreadEvent =
