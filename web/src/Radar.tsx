@@ -16,15 +16,17 @@ export function Radar({
   landed,
   onChanged,
   emptyHint,
+  focus,
 }: {
   companyId: string;
   matches: Match[];
   landed: Set<string>;
   onChanged: () => void;
   emptyHint: React.ReactNode;
+  focus?: string | null;
 }) {
-  const [filter, setFilter] = useState<Filter>('go');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>(focus ? 'all' : 'go');
+  const [selected, setSelected] = useState<string | null>(focus ?? null);
 
   const visible = matches.filter((m) =>
     filter === 'all' ? true : filter === 'decided' ? m.decision != null : m.decision == null && m.verdict === filter && m.scored_by !== 'quick',

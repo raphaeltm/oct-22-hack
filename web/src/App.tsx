@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Analyst } from './Analyst';
 import { ago, api, money, shortDate, useEventStream, VERDICT_LABEL, type Match, type Stats } from './api';
 import { CompanyPage, Onboarding } from './Company';
+import { Digest } from './Digest';
 import { Radar } from './Radar';
 
-type View = 'radar' | 'analyst' | 'company' | 'new';
+type View = 'radar' | 'analyst' | 'digest' | 'company' | 'new';
 type Health = Awaited<ReturnType<typeof api.health>>;
 
 /** What Cachet runs on, live: judges and users can see the data layer working. */
@@ -32,12 +33,13 @@ type LogLine = { id: number; at: Date; text: string; tone?: 'go' | 'maybe' | 'no
 const VIEWS: { key: Exclude<View, 'new'>; label: string }[] = [
   { key: 'radar', label: 'Radar' },
   { key: 'analyst', label: 'Analyst' },
+  { key: 'digest', label: 'Weekly digest' },
   { key: 'company', label: 'Your firm' },
 ];
 
 function readView(): View {
   const v = location.hash.replace('#', '');
-  return v === 'analyst' || v === 'company' || v === 'new' ? v : 'radar';
+  return v === 'analyst' || v === 'digest' || v === 'company' || v === 'new' ? v : 'radar';
 }
 
 function storedCompany() {
@@ -50,6 +52,7 @@ function storedCompany() {
 
 export function App() {
   const [view, setView] = useState<View>(readView);
+  const [focus, setFocus] = useState<string | null>(null);
   const [companies, setCompanies] = useState<{ id: string; name: string }[] | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(storedCompany);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -246,7 +249,7 @@ export function App() {
           <>
             <header className="top">
               <div>
-                <p className="eyebrow">{view === 'radar' ? 'Open EU tenders' : view === 'analyst' ? 'Bid analyst' : 'Profile and track record'}</p>
+                <p className="eyebrow">{view === 'radar' ? 'Open EU tenders' : view === 'analyst' ? 'Bid analyst' : view === 'digest' ? 'Weekly digest preview' : 'Profile and track record'}</p>
                 <h1>{name}</h1>
               </div>
               {view === 'radar' && (
@@ -284,7 +287,20 @@ export function App() {
               </dl>
             )}
 
-            {view === 'radar' && <Radar companyId={companyId} matches={matches} landed={landed} onChanged={refresh} emptyHint={emptyHint} />}
+            {view === 'radar' && (
+              <Radar companyId={companyId} matches={matches} landed={landed} onChanged={refresh} emptyHint={emptyHint} focus={focus} />
+            )}
+            {view === 'digest' && (
+              <Digest
+                name={name}
+                matches={matches}
+                stats={stats}
+                onOpen={(id) => {
+                  setFocus(id);
+                  go('radar');
+                }}
+              />
+            )}
             {view === 'analyst' && <Analyst companyId={companyId} />}
             {view === 'company' && <CompanyPage companyId={companyId} onSaved={refresh} />}
           </>

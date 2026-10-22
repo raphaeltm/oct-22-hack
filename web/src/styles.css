@@ -449,3 +449,28 @@ a { color: var(--journal); }
 .status-ok { background: #5fd394; }
 .status-bad { background: #ff7b6e; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- digest ---------- */
+
+.digest-page { max-width: 760px; }
+.digest-note { margin: 0; font-size: 14px; }
+.mail { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(14, 26, 58, 0.08); overflow: hidden; }
+.mail-head { padding: 22px 28px 18px; border-bottom: 1px solid var(--rule); display: grid; gap: 10px; }
+.mail-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font: 12px var(--mono); color: var(--muted); }
+.mail-head h2 { font-size: 26px; line-height: 1.15; }
+.mail-lede { margin: 0; color: var(--ink-2); }
+.mail-list { list-style: none; margin: 0; padding: 0; }
+.mail-list li { display: grid; grid-template-columns: 70px 1fr; gap: 14px; padding: 16px 28px; border-bottom: 1px solid var(--rule); }
+.mail-stamp { display: grid; justify-items: center; gap: 6px; padding-top: 2px; }
+.mail-score { font: 500 13px var(--mono); color: var(--muted); }
+.mail-title { all: unset; cursor: pointer; font-weight: 600; line-height: 1.3; color: var(--journal); }
+.mail-title:hover { text-decoration: underline; }
+.mail-title:focus-visible { outline: 2px solid var(--journal); outline-offset: 2px; }
+.mail-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.mail-why { margin: 4px 0 0; font-size: 14px; font-style: italic; color: var(--ink-2); }
+.mail-foot { padding: 20px 28px 24px; display: grid; gap: 8px; justify-items: start; background: var(--folder); }
+.mail-foot p { margin: 0; font-size: 13px; }
+@media (max-width: 760px) {
+  .mail-head, .mail-list li, .mail-foot { padding-left: 16px; padding-right: 16px; }
+  .mail-list li { grid-template-columns: 54px 1fr; }
+}
