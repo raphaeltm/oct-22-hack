@@ -114,10 +114,15 @@ data.get('/competitors/:id', async (c) => {
     WHERE a.organisation_id = ${id}
     ORDER BY a.award_date DESC NULLS LAST`);
   const list = awards.rows as { value: number | null; buyerName: string | null }[];
+  const notes = await db.execute(sql`
+    SELECT n.id, n.source, n.content, n.url, n.created_at AS "createdAt"
+    FROM research_notes n WHERE n.organisation_id = ${id}
+    ORDER BY n.created_at DESC LIMIT 50`);
   return c.json({
     ...org,
     wins: list.length,
     totalValue: list.reduce((s, a) => s + (a.value ?? 0), 0),
     awards: list,
+    notes: notes.rows,
   });
 });
