@@ -7,6 +7,7 @@ import { ChatPanel } from './ChatPanel';
 import { Icon, Initials, useApi } from './ui';
 
 const NAV = [
+  { to: '/autopilot', label: 'Autopilot', icon: 'spark' },
   { to: '/tenders', label: 'Tenders', icon: 'tenders' },
   { to: '/competitors', label: 'Competitors', icon: 'competitors' },
   { to: '/company', label: 'Company', icon: 'company' },
@@ -46,6 +47,9 @@ function Sidebar() {
   const { data: session } = useSession();
   const navigate = useNavigate();
   const me = useApi(() => api.me(), []);
+  const { pathname } = useLocation();
+  const inbox = useApi(() => api.autopilot(), [pathname]);
+  const unseen = inbox.data?.dossiers.filter((d) => d.status === 'ready' && !d.seenAt).length ?? 0;
   const companyName = me.data?.company?.name;
   const email = session?.user.email ?? me.data?.user?.email ?? '';
   const name = session?.user.name || me.data?.user?.name || email;
@@ -64,6 +68,9 @@ function Sidebar() {
             <NavLink to={item.to} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <Icon name={item.icon} />
               {item.label}
+              {item.to === '/autopilot' && unseen > 0 && (
+                <span className="nav-badge" aria-label={`${unseen} new dossier${unseen > 1 ? 's' : ''}`}>{unseen}</span>
+              )}
             </NavLink>
           </li>
         ))}

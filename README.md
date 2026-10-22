@@ -24,6 +24,20 @@ the release. See [steering evidence](docs/steering-notes.md) for decisions and s
 3. **Augments tenders.** The agent enriches the imported tenders with tags, summaries and a fit score against the company profile.
 4. **Researches competitors.** For a tender or sector, the agent combines Keenable web search with award data to find likely competitors. It summarises their strengths, recent wins and positioning compared with the user's company, and saves the findings for reuse.
 
+5. **Autopilot (issue #19).** When a new tender matches well (score ≥ 40, at least 7 days left), a BullMQ job builds a **pre-bid dossier** without being asked. It contains:
+   - a verdict;
+   - the calendar;
+   - award criteria and weights from the eForms notice;
+   - contract duration and framework;
+   - requirements in the notice compared with the profile;
+   - buyer history and bids received;
+   - the last similar award;
+   - likely bidders and the market value range;
+   - an admin checklist;
+   - draft questions for the buyer.
+
+   The agent logs its predicted bidders. They are graded when the award notice with the same eForms `procedure-identifier` is imported. A **backtest** replays past tenders using only earlier awards and compares the result with a naive baseline. **Bid/skip/won/lost** feedback with a reason changes the ranking right away.
+
 **Target demo flow:** onboard a company in chat → see matching tenders → pick one → get a competitor brief.
 
 ## Data and demo scope

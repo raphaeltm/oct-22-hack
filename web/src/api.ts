@@ -120,6 +120,108 @@ export type TenderCompetitors = {
 
 export type Me = { user: User | null; company: Company | null };
 
+// ---------- autopilot (issue #19) ----------
+
+export type Verdict = 'go' | 'consider' | 'no-go';
+export type Decision = 'bid' | 'skip' | 'won' | 'lost';
+export type SkipReason = 'scope' | 'too_large' | 'too_small' | 'buyer' | 'region' | 'deadline' | 'incumbent' | 'other';
+
+export const SKIP_REASONS: Record<SkipReason, string> = {
+  scope: 'Outside our services',
+  too_large: 'Too large for us',
+  too_small: 'Too small to be worth it',
+  buyer: "Buyer we don't work with",
+  region: 'Wrong region',
+  deadline: 'Deadline too short',
+  incumbent: 'Incumbent too strong',
+  other: 'Other',
+};
+
+export type Dossier = {
+  generatedAt: string;
+  tender: {
+    id: string; publicationNumber: string; title: string; buyerName: string | null; url: string | null;
+    procedureType: string | null; estimatedValue: number | null; deadline: string | null; publicationDate: string | null;
+    lots: number; daysLeft: number | null;
+  };
+  fit: { score: number | null; rationale: string | null; learned: { delta: number; label: string }[] };
+  calendar: { label: string; date: string; kind: 'official' | 'estimate' | 'suggested'; note?: string }[];
+  criteria: { items: { type: string; name: string | null; weight: number | null }[]; priceWeight: number | null; environmental: boolean; note: string };
+  contract: { framework: string | null; duration: string | null; renewals: number | null; endDate: string | null };
+  documents: { dceUrl: string | null; submissionUrl: string | null };
+  requirements: { key: string; label: string; evidence: string; covered: boolean | null }[];
+  buyerHistory: {
+    awardNotices: number;
+    recent: { tenderId: string; title: string; date: string | null; winners: string[]; bidsReceived: number | null; url: string | null }[];
+  };
+  incumbent: { name: string; organisationId: string | null; basis: string; url: string | null } | null;
+  competitors: { name: string; organisationId: string | null; incumbent: boolean; why: string; url: string | null }[];
+  market: { similarAwards: number; valueN: number; valueMedian: number | null; valueP25: number | null; valueP75: number | null; bidsN: number; bidsMedian: number | null };
+  checklist: { item: string; note?: string }[];
+  questions: { fr: string; en: string }[];
+  recommendation: { verdict: Verdict; reasons: string[] };
+  memo: string | null;
+  memoBy: 'model' | 'rules';
+  sources: { label: string; url: string }[];
+};
+
+export type DossierState = {
+  status: 'none' | 'queued' | 'running' | 'ready' | 'failed';
+  tenderId: string;
+  trigger?: 'autopilot' | 'manual';
+  content?: Dossier | null;
+  error?: string | null;
+  updatedAt?: string;
+  decision?: Decision | null;
+  reason?: SkipReason | null;
+};
+
+export type InboxItem = {
+  tenderId: string;
+  status: DossierState['status'];
+  trigger: 'autopilot' | 'manual';
+  score: number | null;
+  error: string | null;
+  seenAt: string | null;
+  createdAt: string;
+  verdict: Verdict | null;
+  incumbent: string | null;
+  criteria: number;
+  title: string;
+  buyerName: string | null;
+  publicationNumber: string;
+  deadline: string | null;
+  estimatedValue: number | null;
+  decision: Decision | null;
+  reason: SkipReason | null;
+};
+
+export type Learned = {
+  decisions: number;
+  skippedHidden: number;
+  weights: Record<string, number>;
+  weightNote: string | null;
+  rules: { kind: string; delta: number; label: string }[];
+};
+
+export type Scorecard = {
+  live: { predicted: number; graded: number; pending: number; top5Hits: number; incumbentGraded: number; incumbentHits: number };
+  backtest: { graded: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
+  baseline: { graded: number; top5Hits: number };
+  examples: {
+    tenderId: string; publicationNumber: string; title: string; buyerName: string | null; url: string | null; awardUrl: string | null;
+    source: string; predicted: { name: string; hit: boolean }[]; winners: string[];
+  }[];
+  notes: string[];
+};
+
+export type AutopilotInbox = {
+  dossiers: InboxItem[];
+  learned: Learned;
+  scorecard: Scorecard;
+  feedback: { tenderId: string; decision: Decision; reason: SkipReason | null; title: string; buyerName: string | null; updatedAt: string }[];
+};
+
 export type Result<T> = { data: T; mock: boolean };
 
 export type TenderSearch = { total: number; tenders: Tender[] };
@@ -140,6 +242,21 @@ async function getJson(path: string): Promise<any> {
   if (res.status === 401) onUnauthorized();
   if (!res.ok) throw new HttpError(res.status);
   if (!res.headers.get('content-type')?.includes('json')) throw new Error('Not JSON');
+  return res.json();
+}
+
+async function send(method: 'POST' | 'DELETE', path: string, body?: unknown): Promise<any> {
+  const res = await fetch(path, {
+    method,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (res.status === 401) onUnauthorized();
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error ?? `Request failed (${res.status})`);
+  }
   return res.json();
 }
 
@@ -334,6 +451,19 @@ export const api = {
       normaliseBrief,
       mocks.getTender(id) ? () => mocks.tenderCompetitors(id, tenderCache.get(id)?.buyerName ?? null) : null,
     ),
+
+  autopilot: () => withFallback<AutopilotInbox>('/api/autopilot', (r) => r as AutopilotInbox, null),
+
+  dossier: (id: string) =>
+    withFallback<DossierState>(`/api/tenders/${encodeURIComponent(id)}/dossier`, (r) => r as DossierState, null),
+
+  /** Build (or rebuild) the pre-bid dossier; progress arrives on /api/jobs/events. */
+  buildDossier: (id: string): Promise<{ jobId: string | null }> => send('POST', `/api/tenders/${encodeURIComponent(id)}/dossier`, {}),
+
+  feedback: (id: string, decision: Decision, reason?: SkipReason): Promise<{ learned: Learned; notes: string[] }> =>
+    send('POST', `/api/tenders/${encodeURIComponent(id)}/feedback`, { decision, reason }),
+
+  undoFeedback: (id: string): Promise<{ learned: Learned }> => send('DELETE', `/api/tenders/${encodeURIComponent(id)}/feedback`),
 
   /** Queues agent research on a competitor; progress arrives on /api/jobs/events. */
   research: async (id: string, force = true): Promise<{ jobId?: string }> => {
