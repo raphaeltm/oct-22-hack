@@ -525,7 +525,9 @@ export async function listDossiers(companyId: string, limit = 30) {
        d.content->'incumbent'->>'name' AS "lastSimilarWinner",
        jsonb_array_length(coalesce(d.content->'criteria'->'items', '[]'::jsonb)) AS criteria,
        t.title, t.buyer_name AS "buyerName", t.publication_number AS "publicationNumber", t.deadline,
-       t.estimated_value::float8 AS "estimatedValue", f.decision, f.reason
+       t.estimated_value::float8 AS "estimatedValue",
+       char_length(t.title) + coalesce(char_length(t.description), 0) AS "textLength",
+       f.decision, f.reason
      FROM prebid_dossiers d JOIN tenders t ON t.id = d.tender_id
      LEFT JOIN tender_feedback f ON f.company_id = d.company_id AND f.tender_id = d.tender_id
      WHERE d.company_id = $1

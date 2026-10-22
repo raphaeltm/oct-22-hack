@@ -15,7 +15,8 @@ import {
   type Verdict,
 } from '../api';
 import { useJobs } from './Jobs';
-import { AskButton, DeadlineChip, Empty, ErrorState, formatDate, formatEur, Icon, Loading, PageHeader, Stat, useApi } from './ui';
+import { AskButton, DeadlineChip, Empty, ErrorState, formatDate, formatEur, Icon, Loading, PageHeader, ReadTimeChip, Stat, useApi } from './ui';
+
 
 const VERDICT: Record<Verdict, { label: string; tone: string }> = {
   go: { label: 'Go', tone: 'go' },
@@ -127,6 +128,7 @@ function InboxRow({ d }: { d: InboxItem }) {
           </div>
           <div className="tender-foot">
             <DeadlineChip deadline={d.deadline} />
+            {d.textLength != null && d.textLength > 0 && <ReadTimeChip chars={d.textLength} />}
             <span className="chip muted">{d.trigger === 'autopilot' ? 'Autopilot' : 'On demand'} · {formatDate(d.createdAt)}</span>
             {busy && <span className="chip muted">Building…</span>}
             {d.decision && <span className="chip award">{DECISION_LABEL[d.decision]}{d.reason ? `: ${SKIP_REASONS[d.reason].toLowerCase()}` : ''}</span>}

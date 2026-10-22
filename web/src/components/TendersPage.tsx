@@ -12,8 +12,10 @@ import {
   Icon,
   Loading,
   PageHeader,
+  ReadTimeChip,
   ScoreRing,
   Stat,
+  tenderTextLength,
   useApi,
   useDebounced,
 } from './ui';
@@ -158,6 +160,7 @@ function TenderCard({ match: { tender, score, rationale, status } }: { match: Ma
         <div className="tender-foot">
           <DeadlineChip deadline={tender.deadline} />
           {status === 'recent' && <span className="chip muted" title="Recently published; deadline passed or not stated">Recent</span>}
+          <ReadTimeChip chars={tenderTextLength(tender.title, tender.description)} />
           <span className="chip value">{formatEur(tender.estimatedValue)}</span>
           <span className="muted small">Due {formatDate(tender.deadline)}</span>
           <span className="spacer" />
@@ -256,6 +259,7 @@ function TenderRow({ tender }: { tender: Tender }) {
           ) : (
             <DeadlineChip deadline={tender.deadline} />
           )}
+          <ReadTimeChip chars={tenderTextLength(tender.title, tender.description)} />
           {tender.estimatedValue != null && <span className="chip value">{formatEur(tender.estimatedValue)}</span>}
           <span className="spacer" />
           {tender.url && (
