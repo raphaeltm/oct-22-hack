@@ -207,8 +207,8 @@ export type Learned = {
 
 export type Scorecard = {
   live: { predicted: number; graded: number; pending: number; top5Hits: number; incumbentGraded: number; incumbentHits: number };
-  backtest: { graded: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
-  baseline: { graded: number; top5Hits: number };
+  backtest: { graded: number; predicted: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
+  baseline: { graded: number; predicted: number; top5Hits: number };
   examples: {
     tenderId: string; publicationNumber: string; title: string; buyerName: string | null; url: string | null; awardUrl: string | null;
     source: string; predicted: { name: string; hit: boolean }[]; winners: string[];
@@ -373,12 +373,13 @@ export const api = {
       null,
     ),
 
-  tenders: (params: { q?: string; cpv?: string; open?: boolean; type?: string; limit?: number; offset?: number } = {}) => {
+  tenders: (params: { q?: string; cpv?: string; open?: boolean; type?: string; sort?: string; limit?: number; offset?: number } = {}) => {
     const qs = new URLSearchParams();
     if (params.q) qs.set('q', params.q);
     if (params.cpv) qs.set('cpv', params.cpv);
     if (params.open) qs.set('open', '1');
     if (params.type) qs.set('type', params.type);
+    if (params.sort) qs.set('sort', params.sort);
     if (params.limit) qs.set('limit', String(params.limit));
     if (params.offset) qs.set('offset', String(params.offset));
     return withFallback<TenderSearch>(

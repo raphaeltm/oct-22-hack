@@ -117,6 +117,7 @@ const PIPELINE = [
 export function Landing() {
   const { data: session } = useSession();
   const root = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
 
   // Reveal-on-scroll for anything marked data-reveal.
   useEffect(() => {
@@ -133,10 +134,38 @@ export function Landing() {
             io.unobserve(e.target);
           }
         }),
-      { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
+      { rootMargin: '0px -8% -8% 0px', threshold: 0.08 },
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (window.innerWidth <= 900) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY + e.deltaX;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const handler = (e: MouseEvent) => {
+      const link = (e.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
+      if (!link || window.innerWidth <= 900) return;
+      const id = link.getAttribute('href')!.slice(1);
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+    };
+    el.addEventListener('click', handler as EventListener);
+    return () => el.removeEventListener('click', handler as EventListener);
   }, []);
 
   useEffect(() => {
@@ -184,7 +213,7 @@ export function Landing() {
         </div>
       </header>
 
-      <main id="main">
+      <main id="main" ref={scrollRef}>
         {/* ---------------- hero ---------------- */}
         <section className="lp-hero">
           <div className="lp-hero-grid" aria-hidden />
@@ -279,14 +308,13 @@ export function Landing() {
           </div>
         </section>
 
-        {/* ---------------- how it works ---------------- */}
-        <section className="lp-section lp-how" id="how">
+        {/* ---------------- how it works — step 01 ---------------- */}
+        <section className="lp-section lp-how lp-panel" id="how">
           <div className="lp-wrap">
             <p className="lp-kicker" data-reveal>How it works</p>
             <h2 className="lp-h2" data-reveal>
               From a two-minute chat to a <em>sourced competitor brief.</em>
             </h2>
-
             <Step
               n="01"
               title="Tell it who you are"
@@ -318,7 +346,12 @@ export function Landing() {
                 </div>
               </div>
             </Step>
+          </div>
+        </section>
 
+        {/* ---------------- how it works — step 02 ---------------- */}
+        <section className="lp-section lp-how lp-panel">
+          <div className="lp-wrap">
             <Step
               n="02"
               title="See what fits, and why"
@@ -354,7 +387,12 @@ export function Landing() {
                 <p className="lp-card-note">Fit is a heuristic score out of 100, not a win probability.</p>
               </div>
             </Step>
+          </div>
+        </section>
 
+        {/* ---------------- how it works — step 03 ---------------- */}
+        <section className="lp-section lp-how lp-panel">
+          <div className="lp-wrap">
             <Step
               n="03"
               title="Know who you're up against"
@@ -448,8 +486,8 @@ export function Landing() {
           </div>
         </section>
 
-        {/* ---------------- autopilot ---------------- */}
-        <section className="lp-section lp-auto" id="autopilot">
+        {/* ---------------- autopilot — intro ---------------- */}
+        <section className="lp-section lp-auto lp-panel" id="autopilot">
           <div className="lp-wrap">
             <div className="lp-auto-head" data-reveal>
               <p className="lp-kicker">Autopilot</p>
@@ -472,7 +510,12 @@ export function Landing() {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
 
+        {/* ---------------- autopilot — cards ---------------- */}
+        <section className="lp-section lp-auto lp-panel">
+          <div className="lp-wrap">
             <div className="lp-auto-grid">
               <article className="lp-auto-card" data-reveal>
                 <span className="lp-mono lp-auto-n">01</span>
@@ -497,7 +540,7 @@ export function Landing() {
                 </p>
                 <p className="lp-bt-big">
                   <b>1.9×</b>
-                  <span>more often than a “most frequent winners” baseline</span>
+                  <span>more often than a "most frequent winners" baseline</span>
                 </p>
                 <div className="lp-bt">
                   <div className="lp-bt-row" style={{ '--w': 17 / 149 } as CSSProperties}>
@@ -571,8 +614,8 @@ export function Landing() {
                 and each one comes with a personal hook:
               </p>
               <blockquote>
-                “You won the Poitiers website redesign. Here are three open tenders like it, and the agencies you'll
-                face.”
+                "You won the Poitiers website redesign. Here are three open tenders like it, and the agencies you'll
+                face."
               </blockquote>
               <ul>
                 <li><b>Who:</b> French digital agencies and ESNs of 10–250 people that bid without a bid team.</li>
@@ -593,16 +636,16 @@ export function Landing() {
           <p data-reveal>Sign in as Rivage Numérique and ask the agent what to bid on.</p>
           <div data-reveal>{cta}</div>
         </section>
-      </main>
 
-      <footer className="lp-footer">
-        <span className="lp-logo lp-logo-sm"><RadarMark /><span>radar<i>.</i></span></span>
-        <p>
-          Built for the 22 Oct 2026 founder hackathon. Tender data comes from TED (EU Publications Office). Rivage
-          Numérique is a fictional company used for the demo, and figures come from the dev database snapshot of
-          22 Oct 2026.
-        </p>
-      </footer>
+        <footer className="lp-footer">
+          <span className="lp-logo lp-logo-sm"><RadarMark /><span>radar<i>.</i></span></span>
+          <p>
+            Built for the 22 Oct 2026 founder hackathon. Tender data comes from TED (EU Publications Office). Rivage
+            Numérique is a fictional company used for the demo, and figures come from the dev database snapshot of
+            22 Oct 2026.
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }

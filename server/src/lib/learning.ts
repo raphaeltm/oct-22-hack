@@ -344,8 +344,8 @@ function baselineFor(notices: Awaited<ReturnType<typeof awardIndex>>['notices'],
 
 export type Scorecard = {
   live: { predicted: number; graded: number; pending: number; top5Hits: number; incumbentGraded: number; incumbentHits: number };
-  backtest: { graded: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
-  baseline: { graded: number; top5Hits: number };
+  backtest: { graded: number; predicted: number; top5Hits: number; incumbentGraded: number; incumbentHits: number; avgWinners: number };
+  baseline: { graded: number; predicted: number; top5Hits: number };
   examples: {
     tenderId: string;
     publicationNumber: string;
@@ -379,8 +379,13 @@ export async function scorecard(companyId: string | null): Promise<Scorecard> {
   );
   const by = (s: string) => rows.filter((r) => r.source === s);
   const live = by('live');
-  const bt = by('backtest').filter((r) => r.graded);
-  const bl = by('baseline').filter((r) => r.graded);
+  // Same tender set for both: every backtested tender graded for either method.
+  // A method that produced no prediction for a tender counts as a miss there.
+  const btAll = by('backtest').filter((r) => r.graded);
+  const blAll = by('baseline').filter((r) => r.graded);
+  const eligible = new Set([...btAll, ...blAll].map((r) => r.tender_id));
+  const bt = btAll.filter((r) => eligible.has(r.tender_id));
+  const bl = blAll.filter((r) => eligible.has(r.tender_id));
   const examples = await pool.query(
     `SELECT p.tender_id AS "tenderId", t.publication_number AS "publicationNumber", t.title, t.buyer_name AS "buyerName", t.url,
        aw.url AS "awardUrl", p.source,
@@ -403,18 +408,20 @@ export async function scorecard(companyId: string | null): Promise<Scorecard> {
       incumbentHits: live.filter((r) => r.inc_hit).length,
     },
     backtest: {
-      graded: bt.length,
+      graded: eligible.size,
+      predicted: bt.length,
       top5Hits: bt.filter((r) => r.top5_hit).length,
       incumbentGraded: bt.filter((r) => r.inc_graded).length,
       incumbentHits: bt.filter((r) => r.inc_hit).length,
       avgWinners: bt.length ? Math.round((bt.reduce((a, r) => a + r.winners, 0) / bt.length) * 10) / 10 : 0,
     },
-    baseline: { graded: bl.length, top5Hits: bl.filter((r) => r.top5_hit).length },
+    baseline: { graded: eligible.size, predicted: bl.length, top5Hits: bl.filter((r) => r.top5_hit).length },
     examples: examples.rows,
     notes: [
-      'Backtest: past TED tenders that now have an award notice (matched by eForms procedure id). Predictions use only award notices published before the tender.',
-      'Baseline: the 5 most frequent winners in the same CPV area before that date.',
-      'A hit means one of the top 5 predicted firms is among the winners. Multi-winner frameworks make hits easier; predictions are evidence, not certainty.',
+      'Backtest: past TED tenders that now have an award notice (matched by eForms procedure id). Predictions use only award notices published before the tender; the target award is excluded.',
+      'Baseline: the 5 most frequent winners in the same CPV area before that date. Both are scored on the same tenders; a tender where a method made no prediction counts as a miss for it.',
+      'This measures whether past award data points to the eventual winner, not who actually bid (TED does not publish bidder lists) or whether you should bid. Multi-winner frameworks make hits easier.',
+      'Known limitation: the list of overly common words used for text matching is computed over all imported notices, including later ones.',
       'Previous supplier: the winner of the buyer\'s most recent similar award. Award data starts in 2025, so the true predecessor of a multi-year contract is often older and missing.',
     ],
   };

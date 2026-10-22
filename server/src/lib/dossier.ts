@@ -529,7 +529,11 @@ export async function listDossiers(companyId: string, limit = 30) {
      FROM prebid_dossiers d JOIN tenders t ON t.id = d.tender_id
      LEFT JOIN tender_feedback f ON f.company_id = d.company_id AND f.tender_id = d.tender_id
      WHERE d.company_id = $1
-     ORDER BY d.created_at DESC LIMIT $2`,
+     -- Work in progress, then undecided Go / Consider / No-go, then decided; newest first within each.
+     ORDER BY (d.status IN ('queued', 'running')) DESC, (f.decision IS NULL) DESC,
+       CASE d.content->'recommendation'->>'verdict' WHEN 'go' THEN 0 WHEN 'consider' THEN 1 ELSE 2 END,
+       d.created_at DESC
+     LIMIT $2`,
     [companyId, limit],
   );
   return rows;

@@ -9,6 +9,7 @@ import { CompetitorDetailPage } from './components/CompetitorDetailPage';
 import { CompanyPage } from './components/CompanyPage';
 import { AutopilotPage } from './components/Autopilot';
 import { Landing } from './components/Landing';
+import { Hackathon } from './components/Hackathon';
 import { LoginPage, RequireAuth } from './Login';
 import { ConsentPage } from './Consent';
 
@@ -18,6 +19,7 @@ export function App() {
       <Routes>
         {/* Public */}
         <Route index element={<Landing />} />
+        <Route path="hackathon" element={<Hackathon />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="oauth/consent" element={<ConsentPage />} />
 

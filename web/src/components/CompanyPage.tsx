@@ -1,6 +1,92 @@
 import { api } from '../api';
 import { AskButton, ErrorState, Initials, Loading, PageHeader, useApi } from './ui';
 
+type PastWin = { title?: string; buyer?: string; year?: number; value?: string };
+
+/** "typicalContractSize" -> "Typical contract size" */
+function humanise(key: string) {
+  const s = key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function text(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return JSON.stringify(v);
+}
+
+function winLabel(w: unknown) {
+  const win = (typeof w === 'object' && w ? w : {}) as PastWin;
+  if (typeof win.title !== 'string') return { title: text(w), meta: '' };
+  return { title: win.title, meta: [win.buyer, win.year, win.value].filter(Boolean).join(' · ') };
+}
+
+function Tags({ items, mono }: { items: unknown[]; mono?: boolean }) {
+  return (
+    <div className="tags">
+      {items.length ? (
+        items.map((s, i) => <span key={`${text(s)}-${i}`} className={mono ? 'tag mono' : 'tag'}>{text(s)}</span>)
+      ) : (
+        <span className="muted">—</span>
+      )}
+    </div>
+  );
+}
+
+/** Facts the agent saved in companies.profile (past wins, competitors, certifications, ...). */
+function ProfileFacts({ profile }: { profile: Record<string, unknown> }) {
+  const list = (v: unknown) => (Array.isArray(v) ? v : []);
+  const pastWins = list(profile.pastWins);
+  const knownCompetitors = list(profile.knownCompetitors);
+  const certifications = list(profile.certifications);
+  const other = Object.entries(profile).filter(
+    ([k, v]) => !['pastWins', 'knownCompetitors', 'certifications'].includes(k) && v != null && v !== '' && !(Array.isArray(v) && !v.length),
+  );
+
+  return (
+    <>
+      <div className="profile-grid">
+        <div>
+          <h3 className="sub-title">Certifications</h3>
+          <Tags items={certifications} />
+        </div>
+        <div>
+          <h3 className="sub-title">Known competitors</h3>
+          <Tags items={knownCompetitors} />
+        </div>
+      </div>
+
+      <h3 className="sub-title">Past wins</h3>
+      {pastWins.length ? (
+        <ul className="checks">
+          {pastWins.map((w, i) => {
+            const { title, meta } = winLabel(w);
+            return (
+              <li key={`${title}-${i}`}>
+                {title}
+                {meta && <span className="muted"> — {meta}</span>}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <span className="muted">—</span>
+      )}
+
+      {other.length > 0 && (
+        <div className="profile-grid">
+          {other.map(([k, v]) => (
+            <div key={k}>
+              <h3 className="sub-title">{humanise(k)}</h3>
+              {Array.isArray(v) ? <Tags items={v} /> : <div>{text(v)}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function CompanyPage() {
   const { data, mock, loading, error } = useApi(() => api.me(), []);
 
@@ -84,6 +170,8 @@ export function CompanyPage() {
             </ul>
           </>
         )}
+
+        <ProfileFacts profile={c.profile ?? {}} />
       </section>
     </>
   );

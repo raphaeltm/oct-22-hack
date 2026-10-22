@@ -29,6 +29,7 @@ export type SearchTendersInput = {
   buyer?: string;
   openOnly?: boolean;
   noticeType?: 'cn-standard' | 'can-standard';
+  sort?: 'deadline_asc' | 'deadline_desc';
   limit?: number;
 };
 
@@ -59,7 +60,7 @@ export async function searchTenders(input: SearchTendersInput) {
        (SELECT coalesce(json_agg(a.winner_name), '[]') FROM awards a WHERE a.tender_id = t.id) AS winners
      FROM tenders t
      ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-     ORDER BY ${rank ? `${rank} DESC, ` : ''}${input.openOnly ? 't.deadline ASC' : 't.publication_date DESC NULLS LAST'}
+     ORDER BY ${rank ? `${rank} DESC, ` : ''}${input.openOnly ? `t.deadline ${input.sort === 'deadline_asc' ? 'ASC' : 'DESC'} NULLS LAST` : 't.publication_date DESC NULLS LAST'}
      LIMIT ${limit}`,
     params,
   );
