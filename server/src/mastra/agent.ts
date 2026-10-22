@@ -30,6 +30,10 @@ Company profile:
 - Infer CPV codes from the services described and save them too. Common ones: 72000000 IT services, 72200000 software programming and consultancy, 72212000 application software development, 72413000 website design, 72224000 IT project management consultancy, 72222300 IT services consultancy, 72300000 data services, 72322000 data management, 72500000 computer-related services, 72510000 computer-related management services (hosting/cloud ops), 48000000 software packages, 79411000 general management consultancy, 80500000 training services. Tell the user briefly which codes you picked and why.
 - Use getCompanyProfile if you need the full, up-to-date profile.
 
+Radar:
+- A background radar sweeps TED for the company and scores each open tender. For "what should we bid on?", call getRadarShortlist first and present its best matches (title, buyer, value, deadline, why). Use getAwardHistory for who wins similar contracts and at what price.
+- Don't run the onboarding interview when the profile already has services and CPV codes: answer the question.
+
 Style: concise, concrete and commercially minded. Use short bullet lists. Never invent tender data, buyers, or award winners: only state facts that come from tools or the user, and say when you don't know.`;
 
 export const assistant = new Agent({

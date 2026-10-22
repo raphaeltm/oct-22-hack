@@ -35,6 +35,12 @@ const TOOL_VERB: Record<string, string> = {
   searchTenders: 'Searched open notices on TED',
   awardHistory: 'Pulled past awards from TED',
   recordDecision: 'Recorded the decision',
+  getRadarShortlist: 'Checked the radar shortlist',
+  getAwardHistory: 'Pulled past awards from TED',
+  getCompanyProfile: 'Read your firm profile',
+  updateCompanyProfile: 'Updated your firm profile',
+  researchCompetitors: 'Started competitor research',
+  getResearchNotes: 'Read competitor research',
 };
 
 export type Step = { callId: string; tool: string; args: unknown; summary?: string };
