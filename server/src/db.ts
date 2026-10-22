@@ -3,10 +3,9 @@ import pg from 'pg';
 // App data (company profiles, tenders, scored matches, decisions) lives in
 // Postgres next to Mastra's memory tables. Schema is applied on boot.
 
-export const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL ?? 'postgres://app:app@localhost:5432/app',
-  ssl: process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
-});
+// For Aiven PostgreSQL use ...?sslmode=no-verify (TLS with Aiven's project CA).
+export const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://app:app@localhost:5432/app';
+export const pool = new pg.Pool({ connectionString: DATABASE_URL });
 
 export async function migrate() {
   await pool.query(`
@@ -66,6 +65,8 @@ export async function migrate() {
       scored_at timestamptz not null default now(),
       primary key (company_id, tender_id)
     );
+    -- score before the latest re-read, so the UI can show what the team's rules changed
+    alter table matches add column if not exists prev_score int;
     create table if not exists scans (
       id serial primary key,
       company_id int not null references companies(id) on delete cascade,

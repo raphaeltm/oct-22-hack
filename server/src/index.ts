@@ -7,6 +7,7 @@ import { feedKey, publish, redis, subscribe, threadKey } from './events';
 import { draftProfile, makeAnalyst, memory } from './mastra';
 import { hasModelKey, MODEL } from './model';
 import { learnRules, rescore, scan, startWatcher } from './radar';
+import { searchAwards } from './ted';
 import { seed } from './seed';
 
 const RESOURCE_ID = 'default-user';
@@ -16,7 +17,11 @@ const app = new Hono();
 app.get('/api/health', async (c) => {
   const redisOk = await redis.ping().then(() => true, () => false);
   const dbOk = await pool.query('select 1').then(() => true, () => false);
-  return c.json({ ok: true, model: hasModelKey ? MODEL : null, redis: redisOk, db: dbOk });
+  const { rows } = await pool
+    .query('select finished_at, error from scans where finished_at is not null order by id desc limit 1')
+    .catch(() => ({ rows: [] as any[] }));
+  const ted = rows[0] ? { ok: !rows[0].error, at: rows[0].finished_at, error: rows[0].error } : null;
+  return c.json({ ok: true, model: hasModelKey ? MODEL : null, redis: redisOk, db: dbOk, ted });
 });
 
 // ---------- Companies ----------
@@ -92,7 +97,7 @@ app.get('/api/companies/:id/matches', async (c) => {
   const id = Number(c.req.param('id'));
   const { rows } = await pool.query(
     `select t.id, t.title, t.buyer, t.country, t.cpv, t.nature, t.value, t.currency, t.published, t.deadline, t.url,
-            m.score, m.verdict, m.headline, m.reasons, m.risks, m.effort, m.scored_by, m.decision, m.decision_reason,
+            m.score, m.prev_score, m.verdict, m.headline, m.reasons, m.risks, m.effort, m.scored_by, m.decision, m.decision_reason,
             m.brief is not null as has_brief, m.scored_at
        from matches m join tenders t on t.id = m.tender_id
       where m.company_id = $1 and (t.deadline is null or t.deadline > now() or m.decision is not null)
@@ -108,11 +113,12 @@ app.get('/api/companies/:id/stats', async (c) => {
   const [{ rows: m }, { rows: s }, { rows: total }] = await Promise.all([
     pool.query(
       `select count(*)::int as matches,
-              count(*) filter (where m.verdict = 'go')::int as go,
-              count(*) filter (where m.verdict = 'maybe')::int as maybe,
+              count(*) filter (where m.verdict = 'go' and m.decision is null and m.scored_by <> 'quick')::int as go,
+              count(*) filter (where m.verdict = 'maybe' and m.decision is null and m.scored_by <> 'quick')::int as maybe,
               count(*) filter (where m.decision is not null)::int as decided,
-              coalesce(sum(t.value) filter (where m.verdict in ('go','maybe') and m.scored_by <> 'quick'), 0)::float as pipeline,
-              min(t.deadline) filter (where m.verdict = 'go' and t.deadline > now()) as next_deadline
+              count(*) filter (where m.prev_score is not null)::int as rescored,
+              coalesce(sum(t.value) filter (where m.verdict in ('go','maybe') and m.scored_by <> 'quick' and coalesce(m.decision, 'go') = 'go'), 0)::float as pipeline,
+              min(t.deadline) filter (where m.verdict = 'go' and m.decision is distinct from 'no-go' and t.deadline > now()) as next_deadline
          from matches m join tenders t on t.id = m.tender_id
         where m.company_id = $1 and (t.deadline is null or t.deadline > now())`,
       [id],
@@ -133,7 +139,7 @@ app.get('/api/companies/:id/tenders/:tid', async (c) => {
   const id = Number(c.req.param('id'));
   const { rows } = await pool.query(
     `select t.id, t.title, t.buyer, t.country, t.cpv, t.nature, t.value, t.currency, t.published, t.deadline, t.url, t.description,
-            m.score, m.verdict, m.headline, m.reasons, m.risks, m.effort, m.scored_by, m.decision, m.decision_reason, m.brief
+            m.score, m.prev_score, m.verdict, m.headline, m.reasons, m.risks, m.effort, m.scored_by, m.decision, m.decision_reason, m.brief
        from tenders t left join matches m on m.tender_id = t.id and m.company_id = $1
       where t.id = $2`,
     [id, c.req.param('tid')],
@@ -187,6 +193,38 @@ Then write markdown with exactly these sections:
     await pool.query('update matches set brief = $3 where company_id = $1 and tender_id = $2', [id, tid, text]);
   } });
   return c.json({ threadId, runId }, 202);
+});
+
+// Who wins this kind of work: award notices in the same CPV family and country,
+// plus the buyer's own past awards. Live from TED, cached in Valkey.
+app.get('/api/companies/:id/tenders/:tid/competition', async (c) => {
+  const { rows } = await pool.query('select buyer, country, cpv from tenders where id = $1', [c.req.param('tid')]);
+  const t = rows[0];
+  if (!t) return c.json({ error: 'not found' }, 404);
+  const family = [...new Set((t.cpv as string[]).map((x) => x.slice(0, 3).padEnd(8, '0')))].slice(0, 3);
+  try {
+    const [similar, buyer] = await Promise.all([
+      searchAwards({ cpv: family, countries: t.country ? [t.country] : undefined, years: 3 }),
+      t.buyer ? searchAwards({ buyer: t.buyer, years: 5 }) : Promise.resolve([]),
+    ]);
+    const tally = new Map<string, { name: string; wins: number; total: number }>();
+    for (const a of similar)
+      for (const w of a.winners) {
+        const e = tally.get(w) ?? { name: w, wins: 0, total: 0 };
+        e.wins++;
+        e.total += a.value ?? 0;
+        tally.set(w, e);
+      }
+    const values = similar.map((a) => a.value).filter((v): v is number => v != null).sort((a, b) => a - b);
+    return c.json({
+      awards: similar.length,
+      winners: [...tally.values()].sort((a, b) => b.wins - a.wins).slice(0, 6),
+      median: values.length ? values[Math.floor(values.length / 2)] : null,
+      buyerAwards: buyer.slice(0, 6),
+    });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 502);
+  }
 });
 
 // SSE: live radar activity for a company.

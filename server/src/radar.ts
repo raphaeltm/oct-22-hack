@@ -80,8 +80,12 @@ function tenderText(t: Tender) {
     .join('\n');
 }
 
-async function llmScore(context: string, t: Tender) {
-  const r = await scorer.generate(`${context}\n\n---\n${tenderText(t)}`, {
+async function llmScore(context: string, t: Tender, previous?: { score: number; verdict: string; headline: string }) {
+  // On a re-read, anchor to the earlier call so only the team's new rules move the score.
+  const anchor = previous
+    ? `\n\nYOUR PREVIOUS ASSESSMENT: ${previous.score}/100, ${previous.verdict} ("${previous.headline}"). Keep the same score unless the team's decisions or learned rules above clearly apply to this tender; if they do, change it decisively and say which rule in the headline.`
+    : '';
+  const r = await scorer.generate(`${context}\n\n---\n${tenderText(t)}${anchor}`, {
     structuredOutput: { schema: ScoreSchema },
   });
   return r.object as z.infer<typeof ScoreSchema>;
@@ -107,6 +111,7 @@ async function saveMatch(
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      on conflict (company_id, tender_id) do update set score = excluded.score, verdict = excluded.verdict,
        headline = excluded.headline, reasons = excluded.reasons, risks = excluded.risks, effort = excluded.effort,
+       prev_score = case when matches.scored_by <> 'quick' and matches.score <> excluded.score then matches.score else matches.prev_score end,
        scored_by = excluded.scored_by, scored_at = now()`,
     [companyId, tenderId, m.score, m.verdict, m.headline ?? '', JSON.stringify(m.reasons ?? []), JSON.stringify(m.risks ?? []), m.effort ?? null, scoredBy],
   );
@@ -174,10 +179,15 @@ export async function rescore(companyId: number, tenderIds: string[]) {
   const c = await getCompany(companyId);
   if (!c || !hasModelKey) return;
   const context = await companyContext(c);
-  const { rows } = await pool.query('select * from tenders where id = any($1)', [tenderIds]);
+  const { rows } = await pool.query(
+    `select t.*, m.score as prev_score_now, m.verdict as prev_verdict, m.headline as prev_headline, m.scored_by as prev_by
+       from tenders t left join matches m on m.tender_id = t.id and m.company_id = $2 where t.id = any($1)`,
+    [tenderIds, companyId],
+  );
   await runPool(rows, 4, async (r: any) => {
     const t: Tender = { ...r, noticeType: r.notice_type, value: r.value == null ? null : Number(r.value), published: r.published?.toISOString?.().slice(0, 10) ?? r.published, deadline: r.deadline?.toISOString?.() ?? r.deadline };
-    const m = await llmScore(context, t);
+    const prev = r.prev_by && r.prev_by !== 'quick' ? { score: r.prev_score_now, verdict: r.prev_verdict, headline: r.prev_headline } : undefined;
+    const m = await llmScore(context, t, prev);
     await saveMatch(companyId, t.id, m, MODEL);
     await publishFeed(companyId, { type: 'tender.scored', tenderId: t.id, score: m.score, verdict: m.verdict, title: t.title });
   });

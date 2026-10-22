@@ -47,6 +47,9 @@ const CORE_FIELDS = [
 ];
 const TENDER_FIELDS = [
   'contract-nature',
+  'title-proc',
+  'estimated-value-proc',
+  'estimated-value-cur-proc',
   'total-value',
   'total-value-cur',
   'deadline-receipt-tender-date-lot',
@@ -54,7 +57,7 @@ const TENDER_FIELDS = [
   'description-lot',
   'description-proc',
 ];
-const AWARD_FIELDS = ['winner-name', 'total-value', 'total-value-cur', 'tender-value', 'tender-value-cur'];
+const AWARD_FIELDS = ['winner-name', 'total-value', 'total-value-cur', 'tender-value', 'tender-value-cur', 'result-value-lot'];
 
 // TED rejects unknown fields with a 400; remember the ones it refused.
 const rejectedFields = new Set<string>();
@@ -131,18 +134,24 @@ function deadline(n: any): string | null {
 
 const noticeUrl = (id: string) => `https://ted.europa.eu/en/notice/-/detail/${id}`;
 
+/** "France – IT services – <title>" -> "<title>". */
+function cleanTitle(title: string) {
+  const parts = title.split(' – ');
+  return (parts.length >= 3 ? parts.slice(2).join(' – ') : title).trim();
+}
+
 function toTender(n: any): Tender {
   const id = text(n['publication-number']);
   return {
     id,
-    title: text(n['notice-title']) || '(untitled notice)',
+    title: cleanTitle(text(n['title-proc'], ['fra', 'eng']) || text(n['notice-title'])) || '(untitled notice)',
     buyer: text(n['buyer-name']),
     country: list(n['buyer-country'])[0] ?? '',
     cpv: list(n['classification-cpv']).map((c) => c.slice(0, 8)),
     noticeType: text(n['notice-type']),
     nature: text(n['contract-nature']),
-    value: num(n['total-value']),
-    currency: text(n['total-value-cur']) || null,
+    value: num(n['estimated-value-proc']) ?? num(n['total-value']),
+    currency: text(n['estimated-value-cur-proc']) || text(n['total-value-cur']) || null,
     published: date(n['publication-date']),
     deadline: deadline(n),
     description: (text(n['description-lot']) || text(n['description-proc'])).slice(0, 2000),
@@ -163,15 +172,17 @@ const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
 
 export type TenderQuery = { cpv?: string[]; keywords?: string[]; countries?: string[]; sinceDays?: number; text?: string };
 
+const cpvIn = (codes: string[]) => `classification-cpv IN (${[...new Set(codes.map(cpvPattern))].join(' ')})`;
+
 export function buildQuery(q: TenderQuery) {
   const subject: string[] = [
-    ...(q.cpv ?? []).map((c) => `classification-cpv=${cpvPattern(c)}`),
+    ...(q.cpv?.length ? [cpvIn(q.cpv)] : []),
     ...(q.keywords ?? []).map((k) => `FT~${quote(k)}`),
   ];
-  const clauses: string[] = [];
+  const clauses: string[] = ['notice-type=cn-standard'];
   if (subject.length) clauses.push(or(subject));
   if (q.text) clauses.push(`FT~${quote(q.text)}`);
-  if (q.countries?.length) clauses.push(or(q.countries.map((c) => `buyer-country=${c}`)));
+  if (q.countries?.length) clauses.push(`buyer-country IN (${q.countries.join(' ')})`);
   const since = new Date(Date.now() - (q.sinceDays ?? 21) * 86_400_000);
   clauses.push(`publication-date>=${ymd(since)}`);
   return `${clauses.join(' AND ')} SORT BY publication-date DESC`;
@@ -192,9 +203,9 @@ export async function searchTenders(q: TenderQuery, limit = 50): Promise<Tender[
  */
 export async function searchAwards(q: { cpv?: string[]; buyer?: string; countries?: string[]; years?: number }) {
   const clauses = ['notice-type=can-standard'];
-  if (q.cpv?.length) clauses.push(or(q.cpv.map((c) => `classification-cpv=${cpvPattern(c)}`)));
+  if (q.cpv?.length) clauses.push(cpvIn(q.cpv));
   if (q.buyer) clauses.push(`FT~${quote(q.buyer)}`);
-  if (q.countries?.length) clauses.push(or(q.countries.map((c) => `buyer-country=${c}`)));
+  if (q.countries?.length) clauses.push(`buyer-country IN (${q.countries.join(' ')})`);
   const since = new Date(Date.now() - (q.years ?? 3) * 365 * 86_400_000);
   clauses.push(`publication-date>=${ymd(since)}`);
   const query = `${clauses.join(' AND ')} SORT BY publication-date DESC`;
@@ -208,11 +219,11 @@ export async function searchAwards(q: { cpv?: string[]; buyer?: string; countrie
     const id = text(n['publication-number']);
     return {
       id,
-      title: text(n['notice-title']),
+      title: cleanTitle(text(n['notice-title'])),
       buyer: text(n['buyer-name']),
       country: list(n['buyer-country'])[0] ?? '',
       winners: list(n['winner-name']).slice(0, 4),
-      value: num(n['total-value']) ?? num(n['tender-value']),
+      value: num(n['total-value']) ?? num(n['result-value-lot']) ?? num(n['tender-value']),
       currency: text(n['total-value-cur']) || text(n['tender-value-cur']) || null,
       published: date(n['publication-date']),
       url: noticeUrl(id),

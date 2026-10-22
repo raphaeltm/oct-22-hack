@@ -3,14 +3,14 @@ import { createTool } from '@mastra/core/tools';
 import { Memory } from '@mastra/memory';
 import { PostgresStore } from '@mastra/pg';
 import { z } from 'zod';
-import { getCompany, pool } from '../db';
+import { DATABASE_URL, getCompany, pool } from '../db';
 import { MODEL } from '../model';
 import { companyContext, learnRules } from '../radar';
 import { searchAwards, searchTenders } from '../ted';
 
 export const storage = new PostgresStore({
   id: 'app-store',
-  connectionString: process.env.DATABASE_URL ?? 'postgres://app:app@localhost:5432/app',
+  connectionString: DATABASE_URL,
 });
 
 export const memory = new Memory({
