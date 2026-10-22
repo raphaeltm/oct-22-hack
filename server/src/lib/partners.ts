@@ -87,7 +87,7 @@ type OrgMeta = { id: string; name: string; siret: string | null; city: string | 
 type CoBid = { consortium: string | null; partners: string[]; leader: boolean; tenderId: string; title: string; buyer: string | null; date: string | null; publicationNumber: string; url: string | null };
 type Network = { invites: number; responded: number; interested: number; medianHours: number | null; member: boolean };
 
-async function loadOrgData(orgIds: string[]) {
+async function loadOrgData(orgIds: string[], asOf?: string, excludeTenderIds: string[] = []) {
   const [meta, cobids, network] = await Promise.all([
     pool.query<OrgMeta>(
       `SELECT id, name, siret, city, nuts, contact_email AS "contactEmail", contact_source AS "contactSource", website
@@ -99,9 +99,10 @@ async function loadOrgData(orgIds: string[]) {
          t.publication_date AS date, t.publication_number, t.url,
          ARRAY(SELECT o.name FROM consortium_members o WHERE o.consortium_id = c.id AND o.org_ref <> m.org_ref) AS partners
        FROM consortium_members m JOIN consortia c ON c.id = m.consortium_id JOIN tenders t ON t.id = c.tender_id
-       WHERE m.organisation_id = ANY($1::uuid[])
+       WHERE m.organisation_id = ANY($1::uuid[]) AND ($2::date IS NULL OR t.publication_date < $2::date)
+         AND NOT (t.id = ANY($3::uuid[]))
        ORDER BY t.publication_date DESC NULLS LAST`,
-      [orgIds],
+      [orgIds, asOf ?? null, excludeTenderIds],
     ),
     // Aggregate responsiveness across all companies' invites (counts only, never who invited).
     pool.query<{ organisation_id: string; invites: number; responded: number; interested: number; median_hours: number | null; member: boolean }>(
@@ -164,9 +165,19 @@ export type PartnerCandidate = {
   network: Network | null;
 };
 
-const recency = (d: string | null) => 0.6 + 0.4 * Math.exp(-(d ? Math.max(0, (Date.now() - Date.parse(d)) / 86_400_000) : 730) / 365);
+const recency = (d: string | null, now = Date.now()) => 0.6 + 0.4 * Math.exp(-(d ? Math.max(0, (now - Date.parse(d)) / 86_400_000) : 730) / 365);
 
-export async function partnersForTender(company: CompanyRow, tenderIdOrPub: string, limit = 8) {
+/**
+ * Ranked co-bidding partners for one tender. `asOf` (YYYY-MM-DD) only uses award
+ * notices and joint bids dated before it, and ignores Radar network signals;
+ * `excludeTenderIds` hides notices from the same procedure (backtesting).
+ */
+export async function partnersForTender(
+  company: CompanyRow,
+  tenderIdOrPub: string,
+  limit = 8,
+  opts: { asOf?: string; excludeTenderIds?: string[] } = {},
+) {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenderIdOrPub);
   const { rows } = await pool.query<{
     id: string; publication_number: string; title: string; description: string | null; buyer_name: string | null;
@@ -184,7 +195,10 @@ export async function partnersForTender(company: CompanyRow, tenderIdOrPub: stri
   const { gaps, covered } = tenderGaps(company, text);
   const gapCaps = CAPABILITIES.filter((c) => gaps.some((g) => g.key === c.key));
 
-  const { notices } = await awardIndex();
+  const index = await awardIndex();
+  const hidden = new Set(opts.excludeTenderIds ?? []);
+  const notices = index.notices.filter((n) => !hidden.has(n.id) && (!opts.asOf || (n.date && n.date < opts.asOf)));
+  const now = opts.asOf ? Date.parse(opts.asOf) : Date.now();
   const byId = new Map(notices.map((n) => [n.id, n]));
   const can = `t.notice_type = 'can-standard'`;
   const [similar, own, ...capHits] = await Promise.all([
@@ -241,7 +255,7 @@ export async function partnersForTender(company: CompanyRow, tenderIdOrPub: stri
       const s = Math.max(textHit, cpvHit);
       if (s < 0.3) continue;
       add(n, (a, share) => {
-        const w = s * share * recency(n.date);
+        const w = s * share * recency(n.date, now);
         a.cap.set(c.key, (a.cap.get(c.key) ?? 0) + w);
         a.evidence.push(ev(n, c.label, w));
       });
@@ -251,7 +265,7 @@ export async function partnersForTender(company: CompanyRow, tenderIdOrPub: stri
     const n = byId.get(id);
     if (!n || n.id === t.id) continue;
     add(n, (a, share) => {
-      a.sim += hit.sim * share * recency(n.date);
+      a.sim += hit.sim * share * recency(n.date, now);
       a.evidence.push(ev(n, null, hit.sim * share * 0.5));
     });
   }
@@ -267,7 +281,7 @@ export async function partnersForTender(company: CompanyRow, tenderIdOrPub: stri
     .slice(0, 80);
   const primaryId = (a: Acc) => [...a.orgIds.entries()].sort((x, y) => y[1] - x[1])[0][0];
   const allIds = pre.flatMap((x) => [...x.a.orgIds.keys()]);
-  const data = await loadOrgData(allIds);
+  const data = await loadOrgData(allIds, opts.asOf, [...hidden]);
   const terms = regionTerms(company.regions);
   const smallCompany = !/\b(large|ETI|grand groupe|enterprise)\b/i.test(company.size ?? '');
 
@@ -277,7 +291,7 @@ export async function partnersForTender(company: CompanyRow, tenderIdOrPub: stri
     // One organisation row for SIRET + address, so city and region stay consistent.
     const meta = ids.map((i) => data.meta.get(i)).find((m) => m?.city) ?? data.meta.get(id);
     const coBids = ids.flatMap((i) => data.cobids.get(i) ?? []);
-    const net = ids.map((i) => data.network.get(i)).find(Boolean) ?? null;
+    const net = opts.asOf ? null : ids.map((i) => data.network.get(i)).find(Boolean) ?? null;
     const region = nutsRegion(meta?.nuts);
     const regionOk = !!regionHit(terms, region, meta?.city);
     const overlap = a.wins.size ? a.overlapHits / a.wins.size : 0;
@@ -287,10 +301,13 @@ export async function partnersForTender(company: CompanyRow, tenderIdOrPub: stri
     const base = gapCaps.length
       ? 50 * capability + 12 * similarity + 15 * coBidScore + 8 * Math.min(1, a.sameBuyer) + 7 * (regionOk ? 1 : 0) + 8 * netScore
       : 45 * similarity + 25 * coBidScore + 10 * Math.min(1, a.sameBuyer) + 10 * (regionOk ? 1 : 0) + 10 * netScore;
-    // Firms that mostly win what the company sells are rivals, not complements; a
-    // large integrator rarely joins a small firm's bid as a co-contractor.
+    // With gaps to fill, firms that mostly win what the company sells are rivals, not
+    // complements. Capacity partners do similar work by definition, so no penalty
+    // there (the partner backtest showed it pushed real co-bidders out of the list).
+    // A large integrator rarely joins a small firm's bid as a co-contractor.
     const sizeFactor = large && smallCompany ? 0.6 : 1;
-    const score = Math.round(Math.min(100, base * (1 - 0.45 * overlap) * sizeFactor));
+    const overlapFactor = gapCaps.length ? 1 - 0.45 * overlap : 1;
+    const score = Math.round(Math.min(100, base * overlapFactor * sizeFactor));
     const covers = gapCaps.filter((c) => (a.cap.get(c.key) ?? 0) > 0).map((c) => c.label);
     const role: PartnerCandidate['role'] = large ? 'mandataire' : covers.length && capability < 0.4 ? 'sous-traitant' : 'cotraitant';
     const roleNote =

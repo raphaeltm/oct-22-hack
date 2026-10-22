@@ -22,11 +22,12 @@ export interface ResearchJobData {
   force?: boolean;
 }
 
-/** Autopilot jobs: build one pre-bid dossier, sweep all companies, or backtest predictions. */
+/** Autopilot jobs: build one pre-bid dossier, sweep all companies, or backtest predictions / the partner finder. */
 export type AutopilotJobData =
   | { kind: 'dossier'; companyId: string; tenderId: string }
   | { kind: 'sweep' }
-  | { kind: 'backtest'; limit?: number };
+  | { kind: 'backtest'; limit?: number }
+  | { kind: 'partner-backtest'; limit?: number };
 
 export interface JobProgress {
   current: number;

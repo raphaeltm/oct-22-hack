@@ -6,6 +6,7 @@ import { Link } from 'react-router';
 import {
   api,
   type PartnerCandidate,
+  type PartnerBacktest,
   type PartnerFinder,
   type PartnerInvite,
   type PartnerRole,
@@ -465,6 +466,55 @@ export function PartnersPage() {
           {all.map((i) => <InviteRow key={i.id} invite={i} onChange={invites.reload} />)}
         </div>
       )}
+      <PartnerBacktestCard />
     </>
+  );
+}
+
+const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '—');
+
+/** The partner finder replayed on real joint bids, against two naive baselines. */
+function PartnerBacktestCard() {
+  const state = useApi(() => api.partnerBacktest(), []);
+  if (state.loading && !state.data) return null;
+  if (state.error) return <ErrorState message={`Partner backtest: ${state.error}`} />;
+  const bt: PartnerBacktest | null = state.data ?? null;
+  return (
+    <section className="card">
+      <h2 className="section-title">Partner finder backtest</h2>
+      <p className="muted small">
+        Would Radar have found the real partner? Each case is a real joint bid on a French IT award notice: the lead firm plays you,
+        and every method only sees data published before the bid.
+      </p>
+      {!bt ? (
+        <p className="muted">The backtest runs in the background after startup.</p>
+      ) : (
+        <>
+          <table className="small backtest-table">
+            <thead>
+              <tr><th scope="col">Method</th><th scope="col">Real partner in top 3</th><th scope="col">In top 10</th></tr>
+            </thead>
+            <tbody>
+              {([
+                ['Radar partner finder', bt.radar],
+                ['Most frequent winners in the CPV area', bt.baselineWinners],
+                ['Most frequent joint bidders', bt.baselineJointBidders],
+              ] as const).map(([label, h]) => (
+                <tr key={label}>
+                  <td>{label}</td>
+                  <td>{h.top3}/{bt.cases} ({pct(h.top3, bt.cases)})</td>
+                  <td>{h.top10}/{bt.cases} ({pct(h.top10, bt.cases)})</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="small muted">
+            {bt.cases} joint bids, {bt.avgPartners} partners each on average. A real partner had any earlier TED record in {bt.findable} of them,
+            which caps every method. Median {bt.medianMs} ms per shortlist. Run {formatDate(bt.ranAt)}.
+          </p>
+          <ul className="small muted notes">{bt.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+        </>
+      )}
+    </section>
   );
 }
