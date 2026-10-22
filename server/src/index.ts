@@ -146,6 +146,10 @@ app.get('*', serveStatic({ path: './public/index.html' }));
 
 await runMigrations();
 await runAuthMigrations();
+if (process.env.SEED_DEMO === '1') {
+  const { seedDemo } = await import('./seed/demo');
+  await seedDemo().catch((err) => console.error('demo seed failed', err));
+}
 if (process.env.WORKER !== '0') await startWorkers();
 
 const port = Number(process.env.PORT ?? 3000);

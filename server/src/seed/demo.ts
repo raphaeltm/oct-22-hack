@@ -10,9 +10,8 @@ export const DEMO_USER = {
   password: process.env.DEMO_PASSWORD ?? 'rivage-demo-2026',
 };
 
-async function main() {
-  await runMigrations();
-  await runAuthMigrations();
+/** Creates the demo user (if missing) and upserts the Rivage company. Assumes migrations ran. */
+export async function seedDemo() {
 
   const existing = await pool.query<{ id: string }>('select id from "user" where email = $1', [DEMO_USER.email]);
   let userId = existing.rows[0]?.id;
@@ -29,8 +28,13 @@ async function main() {
   console.log(`log in with ${DEMO_USER.email} / ${DEMO_USER.password}`);
 }
 
-try {
-  await main();
-} finally {
-  await pool.end();
+// CLI entry: npm run seed:demo
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    await runMigrations();
+    await runAuthMigrations();
+    await seedDemo();
+  } finally {
+    await pool.end();
+  }
 }
