@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Radar film</title>
+<link rel="stylesheet" href="film.css" />
+</head>
+<body>
+<div id="stage">
+  <div class="bg bg-glow" id="bgGlow"></div>
+  <div class="bg bg-grid" id="bgGrid"></div>
+
+  <!-- feed: real TED notices streaming behind the hook and problem -->
+  <div id="feed">
+    <div class="lane"></div><div class="lane"></div><div class="lane"></div>
+    <div class="feed-shade" id="feedShade"></div>
+  </div>
+
+  <div class="logo" id="logo">
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55" />
+      <path d="M12 12 L12 1.5 A10.5 10.5 0 0 1 21.6 7.7 Z" fill="currentColor" opacity=".35" />
+      <circle cx="16.5" cy="6.5" r="1.8" fill="#c6f36b" />
+    </svg>
+    <span>radar<i>.</i></span>
+  </div>
+
+  <!-- 1 hook -->
+  <section class="scene" id="s-hook">
+    <div class="hook">
+      <div class="num" id="hookNum">0</div>
+      <div class="sub" id="hookSub">French public IT tenders <em>since 2025.</em></div>
+    </div>
+  </section>
+
+  <!-- 2 problem -->
+  <section class="scene" id="s-problem">
+    <h2 class="prob-head"><span id="probA">You can't read them all.</span><em id="probB">So you bid blind.</em></h2>
+    <div class="prob-list" id="probList"></div>
+  </section>
+
+  <!-- 3 reveal -->
+  <section class="scene" id="s-reveal">
+    <div class="reveal-copy">
+      <p class="eyebrow" id="revEyebrow"><span class="dot"></span> Live on TED · France · IT services</p>
+      <h1><span id="revL1">The bid office</span><span id="revL2">your agency</span><span id="revL3"><em>never had.</em></span></h1>
+    </div>
+    <div class="scope" id="revScope" style="left: 960px; top: 150px; width: 780px;"></div>
+  </section>
+
+  <!-- 4 profile -->
+  <section class="scene" id="s-profile">
+    <div class="copy l" id="profCopy">
+      <span class="step-n">01</span>
+      <h2>Tell it<br><em>who you are.</em></h2>
+      <p>Plain words in. A searchable company profile out.</p>
+    </div>
+    <div class="card chat" id="profCard">
+      <div class="bubble" id="profBubble"><span id="profText"></span><span class="caret" id="profCaret"></span></div>
+      <div class="typing" id="profTyping"><span></span><span></span><span></span></div>
+      <div class="profile" id="profProfile">
+        <div class="profile-head">
+          <span class="avatar">RN</span>
+          <div><b>Rivage Numérique</b><span>Saved company profile</span></div>
+          <span class="check" id="profCheck">✓</span>
+        </div>
+        <p class="plabel">CPV codes</p>
+        <div class="chips" id="profCpv"></div>
+        <p class="plabel">Search terms</p>
+        <div class="chips" id="profKw"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 matches -->
+  <section class="scene" id="s-matches">
+    <div class="card matches" id="matchCard"></div>
+    <div class="copy r" id="matchCopy" style="width: 640px;">
+      <span class="step-n">02</span>
+      <h2>See what fits, <em>and why.</em></h2>
+      <p>A bid or no-bid reason for every match, including the reasons to walk away.</p>
+    </div>
+  </section>
+
+  <!-- 6 rivals -->
+  <section class="scene" id="s-rivals">
+    <div class="copy l" id="rivCopy">
+      <span class="step-n">03</span>
+      <h2>Know who you're <em>up against.</em></h2>
+      <p>Past winners of similar contracts, each with the award notice behind it.</p>
+    </div>
+    <div class="card rivals" id="rivCard">
+      <div class="rivals-head">
+        <span class="mono">TED 708553-2026</span>
+        <b lang="fr">Refonte du site internet de la Ville de Clichy</b>
+        <span>Ranked by similar past awards: CPV, buyer and value</span>
+      </div>
+      <div id="rivList"></div>
+    </div>
+  </section>
+
+  <!-- 7 autopilot -->
+  <section class="scene" id="s-auto">
+    <div class="auto-head" id="autoHead">
+      <p class="kicker">Autopilot <span class="soon"><span class="dot" style="width:9px;height:9px"></span> live in the app</span></p>
+      <h2>It does the homework, <em>and keeps score.</em></h2>
+    </div>
+    <div class="card dossier" id="autoDossier">
+      <span class="n">01</span>
+      <h3>A pre-bid dossier, before you ask</h3>
+      <ul id="dossierList"></ul>
+    </div>
+    <div class="card backtest" id="autoBt">
+      <span class="n">02</span>
+      <h3>It grades itself</h3>
+      <div class="bt-big"><b id="btNum">1.0×</b><span>more often than a “most frequent winners” baseline</span></div>
+      <div class="bt">
+        <div class="bt-row" id="btA"><span>Radar's top 5</span><i></i><b>17 / 149</b></div>
+        <div class="bt-row base" id="btB"><span>Most frequent winners</span><i></i><b>9 / 150</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 receipts -->
+  <section class="scene" id="s-receipts">
+    <h2 class="rc-head" id="rcHead">Every claim comes <em>with a receipt.</em></h2>
+    <div class="receipts" id="rcList"></div>
+  </section>
+
+  <!-- 9 cta -->
+  <section class="scene" id="s-cta">
+    <div class="scope" id="ctaScope" style="left: 260px; top: -160px; width: 1400px;"></div>
+    <div class="cta">
+      <h2 id="ctaH">Stop bidding <em>blind.</em></h2>
+      <p id="ctaP">Sign in as Rivage Numérique and ask the agent what to bid on.</p>
+      <span class="btn" id="ctaBtn">Try the live demo
+        <svg viewBox="0 0 16 16" aria-hidden><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </span>
+      <p class="cta-foot" id="ctaFoot">Real TED data · France · IT services</p>
+    </div>
+  </section>
+
+  <div class="label" id="label"></div>
+  <div class="vignette"></div>
+</div>
+<script type="module" src="film.js"></script>
+</body>
+</html>

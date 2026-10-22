@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, useEffect, useRef } from 'react';
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useSession } from '../auth';
 import '../landing.css';
@@ -166,6 +166,7 @@ export function Landing() {
           <span>radar<i>.</i></span>
         </Link>
         <nav aria-label="Sections" className="lp-nav-links">
+          <a href="#film">Film</a>
           <a href="#how">How it works</a>
           <a href="#evidence">Evidence</a>
           <a href="#autopilot">Autopilot</a>
@@ -225,6 +226,23 @@ export function Landing() {
                 ))}
               </ul>
             ))}
+          </div>
+        </section>
+
+        {/* ---------------- film ---------------- */}
+        <section className="lp-section lp-film" id="film" aria-labelledby="film-title">
+          <div className="lp-wrap">
+            <div className="lp-film-head" data-reveal>
+              <p className="lp-kicker">The one-minute tour</p>
+              <h2 className="lp-h2" id="film-title">
+                From thousands of notices <em>to the one you should bid on.</em>
+              </h2>
+            </div>
+            <Film />
+            <p className="lp-footnote lp-film-note" data-reveal>
+              Every tender, rival and figure in the film is a real TED record from the dev database snapshot of 22 Oct
+              2026. Rivage Numérique is fictional. Voice generated with ElevenLabs.
+            </p>
           </div>
         </section>
 
@@ -614,6 +632,51 @@ function Scope({ quiet = false }: { quiet?: boolean }) {
           );
         })}
       {!quiet && <span className="lp-scope-center">You</span>}
+    </div>
+  );
+}
+
+// The homepage film (source in video/). It never autoplays: the visitor starts it,
+// with sound, and the file isn't downloaded until then.
+function Film() {
+  const video = useRef<HTMLVideoElement>(null);
+  const [state, setState] = useState<'idle' | 'playing' | 'error'>('idle');
+
+  const play = () => {
+    const v = video.current;
+    if (!v) return;
+    setState('playing');
+    v.play().catch(() => setState('error'));
+  };
+
+  return (
+    // data-reveal sits on a wrapper: the scroll observer adds a class React doesn't know about.
+    <div data-reveal>
+      <div className={`lp-film-frame ${state}`}>
+        <video
+          ref={video}
+          src="/media/radar-film.mp4"
+          poster="/media/radar-film.jpg"
+          preload="none"
+          playsInline
+          controls={state === 'playing'}
+          onError={() => setState('error')}
+          aria-label="Radar product film, 67 seconds"
+        >
+          <track kind="captions" src="/media/radar-film.vtt" srcLang="en" label="English" />
+        </video>
+        {state !== 'playing' && (
+          <button type="button" className="lp-film-play" onClick={play} disabled={state === 'error'}>
+            <span className="lp-film-icon" aria-hidden>
+              <svg viewBox="0 0 24 24" width="26" height="26"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg>
+            </span>
+            <span className="lp-film-cta">
+              <b>{state === 'error' ? 'The film failed to load' : 'Watch the film'}</b>
+              <span className="lp-mono">{state === 'error' ? 'Try reloading the page' : '1:07 · sound on · captions'}</span>
+            </span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
