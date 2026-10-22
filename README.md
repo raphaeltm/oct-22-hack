@@ -108,11 +108,24 @@ Tools get the current user with `getUserId(requestContext)` from `server/src/mas
 - `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
   Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
   Resumes via `Last-Event-ID` or `?since=<stream id>` (`0` replays everything retained).
+- `POST /api/jobs/ted-import` `{ since?, limit? }` → `202 { jobId }`; queues a TED import (also runs every 6h)
+- `POST /api/competitors/:id/research` `{ force? }` → `202 { jobId }`; queues Keenable web research on an organisation
+  (searches FR + EN, Claude summary into `organisations.summary`, sources in `research_notes`; skipped if researched < 7 days ago)
+- `GET  /api/jobs/events` — SSE of the `jobs:events` Redis Stream. Events `job.queued | job.active | job.progress | job.completed | job.failed`,
+  each `{ type, queue, jobId, name, at, ... }`; `job.progress` carries `progress: { current, total, message }`. Same resume semantics as thread events.
+
+### Background jobs
+
+BullMQ queues `ted-import` and `research` on `REDIS_URL` (keys prefixed `rfp:`, override with `QUEUE_PREFIX`), processed by in-process workers
+(`server/src/jobs/`). Set `WORKER=0` to run an API-only process, `TED_IMPORT_SCHEDULE=0` to disable the 6-hourly import.
+Web research uses [Keenable](https://docs.keenable.ai/api-reference/search): with `KEENABLE_API_KEY` it calls `/v1/search`,
+otherwise the rate-limited keyless `/v1/search/public` (set `KEENABLE_KEYLESS=0` to disable). Without `ANTHROPIC_API_KEY`
+raw snippets are stored as notes with no summary.
 
 ### Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` (secrets), `MODEL`, `BETTER_AUTH_URL` (variables).
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `KEENABLE_API_KEY` (secrets), `MODEL`, `BETTER_AUTH_URL` (variables).
 
 ## App skeleton
 
@@ -153,8 +166,21 @@ handlers read the user with `c.get('user')`. Mastra memory uses the user id as `
 - `GET  /api/threads/:threadId/events` — SSE of the thread's Redis Stream (`thread:<id>:events`).
   Events: `user.message`, `run.started`, `text.delta`, `run.finished`, `run.error`.
   Resumes via `Last-Event-ID` or `?since=<stream id>` (`0` replays everything retained).
+- `POST /api/jobs/ted-import` `{ since?, limit? }` → `202 { jobId }`; queues a TED import (also runs every 6h)
+- `POST /api/competitors/:id/research` `{ force? }` → `202 { jobId }`; queues Keenable web research on an organisation
+  (searches FR + EN, Claude summary into `organisations.summary`, sources in `research_notes`; skipped if researched < 7 days ago)
+- `GET  /api/jobs/events` — SSE of the `jobs:events` Redis Stream. Events `job.queued | job.active | job.progress | job.completed | job.failed`,
+  each `{ type, queue, jobId, name, at, ... }`; `job.progress` carries `progress: { current, total, message }`. Same resume semantics as thread events.
+
+### Background jobs
+
+BullMQ queues `ted-import` and `research` on `REDIS_URL` (keys prefixed `rfp:`, override with `QUEUE_PREFIX`), processed by in-process workers
+(`server/src/jobs/`). Set `WORKER=0` to run an API-only process, `TED_IMPORT_SCHEDULE=0` to disable the 6-hourly import.
+Web research uses [Keenable](https://docs.keenable.ai/api-reference/search): with `KEENABLE_API_KEY` it calls `/v1/search`,
+otherwise the rate-limited keyless `/v1/search/public` (set `KEENABLE_KEYLESS=0` to disable). Without `ANTHROPIC_API_KEY`
+raw snippets are stored as notes with no summary.
 
 ### Deploy
 
 `docker-compose.yml` is the production stack (app + Postgres + Redis), deployed with SAM `build_and_publish` to the `staging` environment.
-Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` (secrets), `MODEL`, `BETTER_AUTH_URL` (variables).
+Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, `KEENABLE_API_KEY` (secrets), `MODEL`, `BETTER_AUTH_URL` (variables).
