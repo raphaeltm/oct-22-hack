@@ -1,5 +1,48 @@
 # Ideas
 
+## Hackathon context
+
+**Challenge:** Build a working product where one or more agents rely on data to deliver value for a specific user. That could mean:
+
+- querying large datasets
+- reacting to event streams
+- keeping long-term memory
+- combining many sources
+- improving over time from past runs
+
+We choose the customer and the problem. Any models, frameworks, and tools are allowed.
+
+**Requirements:**
+
+- Deploy the app to the sponsor **Aiven's Runtime**.
+- Use Aiven's managed data infrastructure for the data layer where relevant (PostgreSQL, ClickHouse, Valkey, OpenSearch, and more). Every team gets free credits.
+
+**Judging:** Strong teams need more than code. Product thinking, design, and a credible route to first users all count.
+
+## How the RFP space fits the challenge
+
+RFP work is a good fit because the value comes almost entirely from data: past proposals, company knowledge, live tender feeds, and win/loss history.
+
+| Challenge theme            | RFP angle                                                                         | Possible Aiven service       |
+| -------------------------- | --------------------------------------------------------------------------------- | ---------------------------- |
+| Querying large datasets    | Search and analyze public tender and award data (spend, buyers, competitors)      | ClickHouse                   |
+| Reacting to event streams  | Watch tender feeds and alert or triage when a relevant opportunity is published   | Kafka, Valkey                |
+| Long-term memory           | Company knowledge base of past answers, case studies, certifications              | PostgreSQL (pgvector)        |
+| Combining many sources     | Merge tenders, company docs, and competitor and buyer history into one bid brief  | OpenSearch, PostgreSQL       |
+| Improving from past runs   | Learn from win/loss outcomes and reviewer edits to improve future drafts          | PostgreSQL                   |
+
+### Candidate product directions
+
+- **European tender copilot for small firms.** This targets the gap noted below. An agent monitors EU tender feeds (e.g. TED), scores fit against a company profile, and drafts a go/no-go brief plus a first response grounded in the firm's past bids. Route to first users: small consultancies and agencies that can't afford a bid team.
+- **Security questionnaire / due-diligence responder.** A narrower version of the Dialect-style problem. The knowledge base is reused across questionnaires, and the agent flags stale or conflicting answers. Easy to demo, and the buyer is clear.
+- **Buyer-side RFP evaluator.** A Hazel-style tool for smaller public bodies or companies. It scores incoming proposals against requirements and explains each score.
+
+### Open questions
+
+- Which customer can we actually reach for feedback or first users during or after the hackathon?
+- Which public data source is easiest to ingest quickly (e.g. TED API, Contracts Finder, SAM.gov)?
+- What's the smallest demo that shows the agent clearly *depends on data* and gets better with it?
+
 ## RFP space: interesting YC companies
 
 The market breaks into three segments: **responding** to RFPs, **issuing and evaluating** RFPs, and **finding** contract opportunities. Some companies build AI proposal writers; others try to replace larger parts of the procurement workflow.
