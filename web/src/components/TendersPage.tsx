@@ -18,7 +18,7 @@ import {
   useDebounced,
 } from './ui';
 
-type Sort = 'score' | 'deadline' | 'value';
+type Sort = 'score' | 'deadline' | 'deadline_asc' | 'value';
 
 export function TendersPage() {
   const [params, setParams] = useSearchParams();
@@ -77,7 +77,8 @@ function Matches() {
     );
     const key: Record<Sort, (m: Match) => number> = {
       score: (m) => -m.score,
-      deadline: (m) => (m.tender.deadline ? new Date(m.tender.deadline).getTime() : Infinity),
+      deadline: (m) => (m.tender.deadline ? -new Date(m.tender.deadline).getTime() : -Infinity),
+      deadline_asc: (m) => (m.tender.deadline ? new Date(m.tender.deadline).getTime() : Infinity),
       value: (m) => -(m.tender.estimatedValue ?? 0),
     };
     return [...list].sort((a, b) => key[sort](a) - key[sort](b));
@@ -113,11 +114,14 @@ function Matches() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title, buyer or notice number" />
         </label>
         <div className="segmented" role="group" aria-label="Sort by">
-          {(['score', 'deadline', 'value'] as Sort[]).map((s) => (
-            <button key={s} className={sort === s ? 'active' : ''} onClick={() => setSort(s)}>
-              {s === 'score' ? 'Best match' : s === 'deadline' ? 'Deadline' : 'Value'}
-            </button>
-          ))}
+          <button className={sort === 'score' ? 'active' : ''} onClick={() => setSort('score')}>Best match</button>
+          <button
+            className={sort === 'deadline' || sort === 'deadline_asc' ? 'active' : ''}
+            onClick={() => setSort(sort === 'deadline' ? 'deadline_asc' : 'deadline')}
+          >
+            Deadline {sort === 'deadline' ? '↓' : sort === 'deadline_asc' ? '↑' : ''}
+          </button>
+          <button className={sort === 'value' ? 'active' : ''} onClick={() => setSort('value')}>Value</button>
         </div>
         <button className="btn secondary small" onClick={refresh} disabled={refreshing}>
           {refreshing ? 'Refreshing…' : 'Refresh matches'}
@@ -171,14 +175,17 @@ function TenderCard({ match: { tender, score, rationale, status } }: { match: Ma
   );
 }
 
+type DeadlineSort = 'deadline_desc' | 'deadline_asc';
+
 function AllTenders() {
   const [q, setQ] = useState('');
   const [openOnly, setOpenOnly] = useState(true);
   const [itOnly, setItOnly] = useState(true);
+  const [deadlineSort, setDeadlineSort] = useState<DeadlineSort>('deadline_desc');
   const query = useDebounced(q.trim(), 300);
   const { data, loading, error } = useApi(
-    () => api.tenders({ q: query, open: openOnly, cpv: itOnly ? '72,48' : undefined, limit: 50 }),
-    [query, openOnly, itOnly],
+    () => api.tenders({ q: query, open: openOnly, cpv: itOnly ? '72,48' : undefined, sort: openOnly ? deadlineSort : undefined, limit: 50 }),
+    [query, openOnly, itOnly, deadlineSort],
   );
 
   return (
@@ -196,6 +203,16 @@ function AllTenders() {
             <input type="checkbox" checked={itOnly} onChange={(e) => setItOnly(e.target.checked)} /> IT services (CPV 72/48)
           </label>
         </div>
+        {openOnly && (
+          <div className="segmented" role="group" aria-label="Deadline sort">
+            <button className={deadlineSort === 'deadline_desc' ? 'active' : ''} onClick={() => setDeadlineSort('deadline_desc')}>
+              Most time left
+            </button>
+            <button className={deadlineSort === 'deadline_asc' ? 'active' : ''} onClick={() => setDeadlineSort('deadline_asc')}>
+              Closing soon
+            </button>
+          </div>
+        )}
       </div>
 
       {data && (

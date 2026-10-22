@@ -18,12 +18,13 @@ const tenderColumns = sql`
   t.description, t.buyer_name AS "buyerName", t.buyer_country AS "buyerCountry", t.cpv_codes AS "cpvCodes",
   t.estimated_value::float8 AS "estimatedValue", t.currency, t.deadline, t.publication_date AS "publicationDate", t.url`;
 
-// GET /api/tenders?q=&cpv=&open=1&limit=&offset=
+// GET /api/tenders?q=&cpv=&open=1&sort=deadline_desc|deadline_asc&limit=&offset=
 data.get('/tenders', async (c) => {
   const q = c.req.query('q')?.trim();
   const cpv = c.req.query('cpv')?.trim();
   const open = c.req.query('open');
   const type = c.req.query('type')?.trim();
+  const sort = c.req.query('sort')?.trim();
   const { limit, offset } = paging(c.req.query('limit'), c.req.query('offset'));
 
   const where: SQL[] = [];
@@ -41,10 +42,12 @@ data.get('/tenders', async (c) => {
   if (open === '1' || open === 'true') where.push(sql`t.notice_type = 'cn-standard' AND t.deadline > now()`);
   if (type) where.push(sql`t.notice_type = ${type}`);
   const whereSql = where.length ? sql`WHERE ${sql.join(where, sql` AND `)}` : sql``;
+  const isOpen = open === '1' || open === 'true';
+  const deadlineDir = sort === 'deadline_asc' ? sql`ASC` : sort === 'deadline_desc' ? sql`DESC` : isOpen ? sql`DESC` : sql`ASC`;
   const orderSql = q
     ? sql`ORDER BY ts_rank(t.search, websearch_to_tsquery('french', ${q})) DESC, t.publication_date DESC`
-    : open === '1' || open === 'true'
-      ? sql`ORDER BY t.deadline ASC`
+    : isOpen
+      ? sql`ORDER BY t.deadline ${deadlineDir} NULLS LAST`
       : sql`ORDER BY t.publication_date DESC NULLS LAST`;
 
   const [rows, count] = await Promise.all([
