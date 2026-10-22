@@ -248,13 +248,14 @@ export function Landing() {
             <div className="lp-film-head" data-reveal>
               <p className="lp-kicker">The one-minute tour</p>
               <h2 className="lp-h2" id="film-title">
-                From thousands of notices <em>to the one you should bid on.</em>
+                Too big to bid alone? <em>Find the partner you're missing.</em>
               </h2>
             </div>
             <Film />
             <p className="lp-footnote lp-film-note" data-reveal>
-              Every tender, rival and figure in the film is a real TED record from the dev database snapshot of 22 Oct
-              2026. Rivage Numérique is fictional. Voice generated with ElevenLabs.
+              Everything in the film is real output for the demo profile on 22 Oct 2026: Radar's verdict, the gaps, the
+              ranked partners and the French draft, each with its TED notice. Rivage Numérique is fictional. Voice generated
+              with ElevenLabs.
             </p>
           </div>
         </section>
@@ -752,7 +753,7 @@ function Film() {
           playsInline
           controls={state === 'playing'}
           onError={() => setState('error')}
-          aria-label="Radar product film, 67 seconds"
+          aria-label="Radar product film, 72 seconds"
         >
           <track kind="captions" src="/media/radar-film.vtt" srcLang="en" label="English" />
         </video>
@@ -763,7 +764,7 @@ function Film() {
             </span>
             <span className="lp-film-cta">
               <b>{state === 'error' ? 'The film failed to load' : 'Watch the film'}</b>
-              <span className="lp-mono">{state === 'error' ? 'Try reloading the page' : '1:07 · sound on · captions'}</span>
+              <span className="lp-mono">{state === 'error' ? 'Try reloading the page' : '1:12 · sound on · captions'}</span>
             </span>
           </button>
         )}

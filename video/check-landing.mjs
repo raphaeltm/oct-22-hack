@@ -48,18 +48,17 @@ async function open(viewport) {
   await page.close();
 }
 
-// the film panel fits one screen in the horizontal (desktop) layout
+// the whole video frame fits on screen below the fixed nav (vertical page)
 for (const vp of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 1920, height: 1080 }]) {
   const { page } = await open(vp);
+  await page.locator('.lp-film-frame').evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.waitForTimeout(600);
   const r = await page.evaluate(() => {
     const f = document.querySelector('.lp-film-frame').getBoundingClientRect();
-    const n = document.querySelector('.lp-film-note').getBoundingClientRect();
-    const h = document.querySelector('.lp-film .lp-kicker').getBoundingClientRect();
     const nav = document.querySelector('.lp-nav').getBoundingClientRect();
-    return { top: h.top, navBottom: nav.bottom, noteBottom: n.bottom, w: Math.round(f.width), left: f.left, right: f.right };
+    return { h: Math.round(f.height), w: Math.round(f.width), left: f.left, right: f.right, navBottom: nav.bottom, overflow: document.documentElement.scrollWidth > innerWidth };
   });
-  ok(`film panel fits ${vp.width}x${vp.height}`, r.noteBottom <= vp.height && r.top >= r.navBottom && r.left >= 0 && r.right <= vp.width, JSON.stringify(r));
+  ok(`film frame fits ${vp.width}x${vp.height}`, r.h <= vp.height - r.navBottom && r.left >= 0 && r.right <= vp.width && !r.overflow, JSON.stringify(r));
   await page.screenshot({ path: OUT + `panel-${vp.width}.png` });
   await page.close();
 }

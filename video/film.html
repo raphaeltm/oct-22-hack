@@ -10,12 +10,6 @@
   <div class="bg bg-glow" id="bgGlow"></div>
   <div class="bg bg-grid" id="bgGrid"></div>
 
-  <!-- feed: real TED notices streaming behind the hook and problem -->
-  <div id="feed">
-    <div class="lane"></div><div class="lane"></div><div class="lane"></div>
-    <div class="feed-shade" id="feedShade"></div>
-  </div>
-
   <div class="logo" id="logo">
     <svg viewBox="0 0 24 24" aria-hidden>
       <circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.5" />
@@ -26,99 +20,93 @@
     <span>radar<i>.</i></span>
   </div>
 
-  <!-- 1 hook -->
+  <!-- 1 hook: Radar's live verdict, a weak fit on its own -->
   <section class="scene" id="s-hook">
-    <div class="hook">
-      <div class="num" id="hookNum">0</div>
-      <div class="sub" id="hookSub">French public IT tenders <em>since 2025.</em></div>
+    <h2 class="big-head" id="hookHead">Out of reach <em>on your own.</em></h2>
+    <div class="card nb-card" id="hookCard">
+      <div class="fit"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5"/><circle cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="60.2 100"/></svg><span>60.2</span></div>
+      <div class="match-body">
+        <div class="match-meta"><span class="verdict nobid" id="hookVerdict">Weak fit</span><span>Paris Habitat - OPH</span></div>
+        <b lang="fr">Fourniture, prestations et maintenance d'une plateforme de Système d'Information Géographique (SIG) en mode SaaS ou hébergé</b>
+        <p id="hookWhy">Weak fit: <span class="hl" id="hookHl">SIG/GeoSaaS platform sits outside core RGAA/DSFR/web focus</span>; competitive IT buyer history suggests limited differentiation opportunity.</p>
+        <div class="match-foot"><span>TED 667222-2026</span><span>Closes 26 Oct 2026</span><span>Radar's verdict for the demo agency</span></div>
+      </div>
     </div>
   </section>
 
-  <!-- 2 problem -->
-  <section class="scene" id="s-problem">
-    <h2 class="prob-head"><span id="probA">You can't read them all.</span><em id="probB">So you bid blind.</em></h2>
-    <div class="prob-list" id="probList"></div>
+  <!-- 2 insight: groupements -->
+  <section class="scene" id="s-insight">
+    <h2 class="big-head left" id="insHead">In France, you don't have to bid <em>alone.</em></h2>
+    <div class="grp-row" id="grpRow"></div>
+    <div class="ins-count" id="insCount"><b id="insNum">0</b><span>French IT award notices since 2025 name a <em>multi-company bidder</em></span></div>
   </section>
 
   <!-- 3 reveal -->
   <section class="scene" id="s-reveal">
     <div class="reveal-copy">
       <p class="eyebrow" id="revEyebrow"><span class="dot"></span> Live on TED · France · IT services</p>
-      <h1><span id="revL1">The bid office</span><span id="revL2">your agency</span><span id="revL3"><em>never had.</em></span></h1>
+      <h1><span id="revL1">Find the partner</span><span id="revL3"><em>you're missing.</em></span></h1>
     </div>
     <div class="scope" id="revScope" style="left: 960px; top: 150px; width: 780px;"></div>
   </section>
 
-  <!-- 4 profile -->
-  <section class="scene" id="s-profile">
-    <div class="copy l" id="profCopy">
+  <!-- 4 gap -->
+  <section class="scene" id="s-gap">
+    <div class="copy l" id="gapCopy">
       <span class="step-n">01</span>
-      <h2>Tell it<br><em>who you are.</em></h2>
-      <p>Plain words in. A searchable company profile out.</p>
+      <h2>See exactly <em>what you're missing.</em></h2>
+      <p>Capabilities the notice asks for that your profile doesn't cover.</p>
     </div>
-    <div class="card chat" id="profCard">
-      <div class="bubble" id="profBubble"><span id="profText"></span><span class="caret" id="profCaret"></span></div>
-      <div class="typing" id="profTyping"><span></span><span></span><span></span></div>
-      <div class="profile" id="profProfile">
-        <div class="profile-head">
-          <span class="avatar">RN</span>
-          <div><b>Rivage Numérique</b><span>Saved company profile</span></div>
-          <span class="check" id="profCheck">✓</span>
-        </div>
-        <p class="plabel">CPV codes</p>
-        <div class="chips" id="profCpv"></div>
-        <p class="plabel">Search terms</p>
-        <div class="chips" id="profKw"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 5 matches -->
-  <section class="scene" id="s-matches">
-    <div class="card matches" id="matchCard"></div>
-    <div class="copy r" id="matchCopy" style="width: 640px;">
-      <span class="step-n">02</span>
-      <h2>See what fits, <em>and why.</em></h2>
-      <p>A bid or no-bid reason for every match, including the reasons to walk away.</p>
-    </div>
-  </section>
-
-  <!-- 6 rivals -->
-  <section class="scene" id="s-rivals">
-    <div class="copy l" id="rivCopy">
-      <span class="step-n">03</span>
-      <h2>Know who you're <em>up against.</em></h2>
-      <p>Past winners of similar contracts, each with the award notice behind it.</p>
-    </div>
-    <div class="card rivals" id="rivCard">
+    <div class="card gap-card" id="gapCard">
       <div class="rivals-head">
-        <span class="mono">TED 708553-2026</span>
-        <b lang="fr">Refonte du site internet de la Ville de Clichy</b>
-        <span>Ranked by similar past awards: CPV, buyer and value</span>
+        <span class="mono">TED 667222-2026 · Paris Habitat - OPH</span>
+        <b lang="fr">Plateforme SIG en mode SaaS ou hébergé</b>
+        <span>Your profile: accessible websites, DSFR, sovereign cloud</span>
       </div>
-      <div id="rivList"></div>
+      <div id="gapList"></div>
     </div>
   </section>
 
-  <!-- 7 autopilot -->
-  <section class="scene" id="s-auto">
-    <div class="auto-head" id="autoHead">
-      <p class="kicker">Autopilot <span class="soon"><span class="dot" style="width:9px;height:9px"></span> live in the app</span></p>
-      <h2>It does the homework, <em>and keeps score.</em></h2>
+  <!-- 5 partners -->
+  <section class="scene" id="s-partners">
+    <div class="card pf-card" id="pfCard">
+      <div class="pf-head"><b>Partners for TED 667222-2026</b><span class="pf-tag">Joint bid · you lead</span></div>
+      <p class="pf-sub" lang="fr">Pour : la tierce maintenance applicative (TMA) et le SIG</p>
+      <div id="pfList"></div>
     </div>
-    <div class="card dossier" id="autoDossier">
-      <span class="n">01</span>
-      <h3>A pre-bid dossier, before you ask</h3>
-      <ul id="dossierList"></ul>
+    <div class="copy r" id="pfCopy" style="width: 640px;">
+      <span class="step-n">02</span>
+      <h2>Partners who <em>fill the gap.</em></h2>
+      <p>Ranked on TED awards and past joint bids, each with its notice.</p>
     </div>
-    <div class="card backtest" id="autoBt">
-      <span class="n">02</span>
-      <h3>It grades itself</h3>
-      <div class="bt-big"><b id="btNum">1.0×</b><span>more often than a “most frequent winners” baseline</span></div>
-      <div class="bt">
-        <div class="bt-row" id="btA"><span>Radar's top 5</span><i></i><b>17 / 149</b></div>
-        <div class="bt-row base" id="btB"><span>Most frequent winners</span><i></i><b>9 / 150</b></div>
-      </div>
+  </section>
+
+  <!-- 6 outreach -->
+  <section class="scene" id="s-outreach">
+    <div class="copy l" id="outCopy">
+      <span class="step-n">03</span>
+      <h2>Drafted in French. <em>You send it.</em></h2>
+      <p>From your own mailbox. Radar never emails anyone on its own.</p>
+    </div>
+    <div class="card mail" id="mailCard">
+      <div class="pf-head"><b>Invitation · AKKODIS I&amp;S</b><span class="pf-tag">Draft</span></div>
+      <div class="mail-row"><span>Objet</span><b lang="fr" id="mailSubject"></b></div>
+      <div class="mail-scroll" id="mailScroll"><p class="mail-body" lang="fr" id="mailBody"></p></div>
+      <div class="mail-actions" id="mailActions"><span class="btn-sm ghost">Copy</span><span class="btn-sm">Open in my mail app ↗</span></div>
+    </div>
+  </section>
+
+  <!-- 7 replies + network -->
+  <section class="scene" id="s-replies">
+    <div class="card reply" id="replyCard">
+      <div class="pf-head"><b>How a reply is scored</b><span class="pf-tag">out of 100</span></div>
+      <div id="replyList"></div>
+    </div>
+    <svg class="net" id="net" viewBox="0 0 470 700"></svg>
+    <div class="copy r" id="repCopy" style="width: 600px; left: 1250px;">
+      <span class="step-n">04</span>
+      <h2>Score replies. <em>Grow the network.</em></h2>
+      <p>Every partner who answers can open a radar of their own.</p>
     </div>
   </section>
 
@@ -132,8 +120,8 @@
   <section class="scene" id="s-cta">
     <div class="scope" id="ctaScope" style="left: 260px; top: -160px; width: 1400px;"></div>
     <div class="cta">
-      <h2 id="ctaH">Stop bidding <em>blind.</em></h2>
-      <p id="ctaP">Sign in as Rivage Numérique and ask the agent what to bid on.</p>
+      <h2 id="ctaH">Stop bidding <em>alone.</em></h2>
+      <p id="ctaP">Sign in as Rivage Numérique and find a partner for your next tender.</p>
       <span class="btn" id="ctaBtn">Try the live demo
         <svg viewBox="0 0 16 16" aria-hidden><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </span>
