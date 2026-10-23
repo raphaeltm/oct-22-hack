@@ -12,6 +12,8 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
       SEED_DEMO: ${SEED_DEMO:-0}
+      DEMO_EMAIL: ${DEMO_EMAIL:-demo@rivage-numerique.fr}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy

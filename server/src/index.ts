@@ -163,7 +163,8 @@ await runMigrations();
 await runAuthMigrations();
 if (process.env.SEED_DEMO === '1') {
   const { seedDemo } = await import('./seed/demo');
-  await seedDemo().catch((err) => console.error('demo seed failed', err));
+  // A failed rotation must not leave the demo serving with stale credentials.
+  await seedDemo();
 }
 if (process.env.WORKER !== '0') await startWorkers();
 
