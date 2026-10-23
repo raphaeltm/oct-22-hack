@@ -11,7 +11,7 @@
 - **Differentiators:** RGAA/accessibility expertise, DSFR experience, open-source first, sovereign cloud, small senior team, fixed-price delivery.
 - **Pain point:** two people do business development. They miss tenders on BOAMP/TED and don't know who they're bidding against.
 
-**Setup:** run `npm run seed:demo`, then log in with **`demo@rivage-numerique.fr` / `rivage-demo-2026`**. The seed data is in `server/src/seed/rivage.ts` and `server/src/seed/demo.ts`. Competitors are **not** seeded. They come from real TED award notices (expect names like OPEN, SOFTEAM, Davidson Consulting or mc2i, but the data decides).
+**Setup:** securely set `DEMO_PASSWORD`, run `npm run seed:demo`, then log in as **`demo@rivage-numerique.fr`** using that password. Share it privately with presenters; the login page only prefills the email. The seed data is in `server/src/seed/rivage.ts` and `server/src/seed/demo.ts`. Competitors are **not** seeded. They come from real TED award notices (expect names like OPEN, SOFTEAM, Davidson Consulting or mc2i, but the data decides).
 
 ## Script
 

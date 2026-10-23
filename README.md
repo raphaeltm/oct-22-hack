@@ -123,7 +123,7 @@ BetterAuth migrator on startup.
 ## Demo data
 
 `npm run seed:demo` runs migrations, creates the demo user and seeds the fictional **Rivage Numérique** company profile (idempotent, so it's safe to rerun).
-Log in with **`demo@rivage-numerique.fr` / `rivage-demo-2026`** (override with `DEMO_EMAIL` / `DEMO_PASSWORD`).
+Set `DEMO_PASSWORD` securely before seeding (8–128 characters; no default). Log in as **`demo@rivage-numerique.fr`** (override with `DEMO_EMAIL`) using that password. For the demo deployment, store `DEMO_PASSWORD` as a SAM environment Secret and enable `SEED_DEMO=1`. Reseeding applies a changed password to the existing account and revokes its sessions; an unchanged password preserves sessions. Never put the password in source, frontend configuration, or logs.
 The demo script and pitch notes are in [docs/demo.md](docs/demo.md).
 
 ## Agent tools
@@ -199,3 +199,5 @@ Config: `ANTHROPIC_API_KEY`, `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET` and `KEEN
 ## Validation
 
 Run `npm run check` to typecheck both workspaces and build the production frontend. `npm test` runs the server's logic tests (eForms party parsing, SIRET checks, tender gaps; no database needed). Docker strips development dependencies from its runtime image.
+
+Demo password rotation integration test: set `DEMO_SEED_TEST_DATABASE_URL` to a **disposable Postgres database** and run `npm test`. This test runs migrations, creates random test accounts, checks password rotation/session revocation and removes those accounts. Without the variable it is skipped.

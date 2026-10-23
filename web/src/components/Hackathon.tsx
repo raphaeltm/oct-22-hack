@@ -918,7 +918,7 @@ function buildSlides(): SlideDef[] {
               Open <a href={APP_URL} target="_blank" rel="noreferrer">the live app</a> and click <b>Try the live demo</b>.
             </li>
             <li>
-              Sign in with <code>demo@rivage-numerique.fr</code> / <code>rivage-demo-2026</code> (a fictional company; the data is real).
+              Sign in with <code>demo@rivage-numerique.fr</code> and the password shared privately by your demo host (a fictional company; the data is real).
             </li>
             <li>
               Ask: <i>“What should we bid on this month?”</i>, <i>“Which open tenders are too big for us alone?”</i>, open any tender's <b>Partner finder</b>, or open Autopilot and press

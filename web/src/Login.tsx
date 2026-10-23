@@ -2,9 +2,8 @@ import { FormEvent, ReactNode, useState } from 'react';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router';
 import { signIn, signUp, useSession } from './auth';
 
-// Public credentials for the seeded, fictional Rivage Numérique demo account
-// (see README "Demo data"). Only works where SEED_DEMO=1 created the account.
-const DEMO = { email: 'demo@rivage-numerique.fr', password: 'rivage-demo-2026' };
+// The demo password is shared privately, never bundled with the client.
+const DEMO_EMAIL = 'demo@rivage-numerique.fr';
 
 /** Only allow same-app redirects after login. */
 function safeNext(next: string | null) {
@@ -14,8 +13,8 @@ function safeNext(next: string | null) {
 export function Login({ demo = false, signUpFirst = false }: { demo?: boolean; signUpFirst?: boolean }) {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>(signUpFirst ? 'sign-up' : 'sign-in');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState(demo ? DEMO.email : '');
-  const [password, setPassword] = useState(demo ? DEMO.password : '');
+  const [email, setEmail] = useState(demo ? DEMO_EMAIL : '');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const isSignUp = mode === 'sign-up';
@@ -44,13 +43,13 @@ export function Login({ demo = false, signUpFirst = false }: { demo?: boolean; s
             type="button"
             className="auth-demo"
             onClick={() => {
-              setEmail(DEMO.email);
-              setPassword(DEMO.password);
+              setEmail(DEMO_EMAIL);
+              setPassword('');
               setError(null);
             }}
           >
             <strong>Use the demo account</strong>
-            <span>Rivage Numérique, a fictional Lyon digital agency</span>
+            <span>Rivage Numérique · Enter the password shared by your demo host</span>
           </button>
         )}
         {isSignUp && (
